@@ -1,0 +1,12 @@
+# ==============================================================================
+# Delivery Time Prediction - Phase 1: Project Setup Dependencies
+# ==============================================================================
+
+# Core environment configuration
+python-dotenv>=1.0.0
+
+# NOTE: Future phase dependencies will be added incrementally in subsequent phases:
+# - Data Understanding & EDA: pandas, numpy, matplotlib, seaborn
+# - Preprocessing & Modeling: scikit-learn, joblib
+# - Web API & Application: fastapi, uvicorn
+# - Automated Testing: pytest
