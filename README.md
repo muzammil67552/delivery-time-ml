@@ -7,13 +7,14 @@ An end-to-end Machine Learning engineering project designed to predict food deli
 The objective of this project is to develop a reliable, production-ready regression model that accurately forecasts food delivery times. The project follows standard industry MLOps practices, progressing from exploratory data analysis and modular feature engineering to model comparison, hyperparameter tuning, model serialization, and serving via a FastAPI backend paired with an interactive frontend interface.
 
 ## Current Phase
-**Phase 3: Exploratory Data Analysis (EDA)**
-- Univariate distribution analysis (histograms and KDE curves) for numerical features.
-- Categorical frequency analysis (count plots) across ambient and operational factors.
-- Bivariate scatter and regression analysis against target `Delivery_Time_min`.
-- Multivariate correlation heatmap identifying strong drivers and verifying absence of multicollinearity.
-- Outlier detection and validation via IQR method.
-- Documented findings in `notebooks/02_eda.ipynb`.
+**Phase 4: Data Preprocessing**
+- Verified data integrity and confirmed 0 duplicate records.
+- Implemented principled missing value imputation (median for experience, mode for categoricals).
+- Verified and retained legitimate long-distance deliveries without artificial outlier trimming.
+- Separated predictors ($X$) from target ($Y = \text{Delivery\_Time\_min}$) and dropped arbitrary identifier `Order_ID`.
+- Constructed modular `ColumnTransformer` with numerical scaling (`StandardScaler`), ordinal ranking (`OrdinalEncoder`), and nominal dummy encoding (`OneHotEncoder`).
+- Serialized reusable preprocessing pipeline to `models/preprocessor.joblib`.
+- Documented analysis and safeguards in `notebooks/03_data_preprocessing.ipynb`.
 
 ## Project Structure
 ```text
@@ -26,15 +27,17 @@ delivery-time-ml/
 ├── notebooks/             # Jupyter notebooks for exploration and prototyping
 │   ├── 01_dataset_understanding.ipynb
 │   ├── 02_eda.ipynb
+│   ├── 03_data_preprocessing.ipynb
 │   └── model_training.ipynb
 │
 ├── src/                   # Production Python source modules
 │   ├── __init__.py
-│   ├── preprocess.py      # Data cleaning and feature engineering (future phase)
+│   ├── preprocess.py      # Modular preprocessing pipelines & serialization
 │   ├── train.py           # Model training pipelines (future phase)
 │   └── predict.py         # Inference logic (future phase)
 │
 ├── models/                # Serialized model artifacts (.pkl, .joblib)
+│   ├── preprocessor.joblib # Fitted/configured preprocessing pipeline
 │   └── .gitkeep
 │
 ├── app/                   # Application serving layer (FastAPI / UI)
