@@ -1,14 +1,16 @@
-"""Data preprocessing module for Delivery Time Prediction.
+"""Data preprocessing and feature engineering module for Delivery Time Prediction.
 
-This module provides reusable preprocessing pipelines, feature transformers,
+This module provides reusable preprocessing pipelines, custom feature transformers,
 and serialization utilities following Scikit-Learn standards.
 """
 
 import os
 from typing import List, Tuple
 import pandas as pd
+import numpy as np
 import joblib
 
+from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.impute import SimpleImputer
@@ -39,6 +41,57 @@ TRAFFIC_LEVEL_CATEGORIES: List[str] = [
     "Medium",
     "High",
 ]
+
+
+class DeliveryFeatureEngineer(BaseEstimator, TransformerMixin):
+    """Custom Scikit-Learn transformer for domain feature engineering.
+    
+    Transforms raw delivery predictors into high-signal derived features
+    using row-level deterministic operations with zero data leakage.
+    """
+    
+    def __init__(self):
+        pass
+        
+    def fit(self, X: pd.DataFrame, y=None):
+        """Fit method (no-op as all transformations are deterministic)."""
+        return self
+        
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Applies feature engineering transformations.
+        
+        Args:
+            X: Input feature DataFrame.
+            
+        Returns:
+            DataFrame augmented with engineered features.
+        """
+        X_out = X.copy()
+        
+        # 1. Distance category binning (Short, Medium, Long)
+        X_out["Distance_Category"] = pd.cut(
+            X_out["Distance_km"], 
+            bins=[0, 5, 12, np.inf], 
+            labels=["Short", "Medium", "Long"]
+        ).astype(str)
+        
+        # 2. Peak meal hour indicator (Evening dinner rush)
+        X_out["Is_Peak_Meal_Hour"] = (X_out["Time_of_Day"] == "Evening").astype(int)
+        
+        # 3. Preparation time intensity per km
+        X_out["Prep_Time_per_Km"] = (X_out["Preparation_Time_min"] / (X_out["Distance_km"] + 1e-5)).round(2)
+        
+        # 4. Vehicle x Distance physical constraint interaction (Bicycle > 12 km)
+        X_out["Bike_Long_Distance"] = ((X_out["Vehicle_Type"] == "Bike") & (X_out["Distance_km"] > 12.0)).astype(int)
+        
+        # 5. Compound severe conditions interaction (Adverse weather + High traffic)
+        adverse_weather = ["Snowy", "Rainy", "Foggy"]
+        X_out["Severe_Conditions"] = (
+            X_out["Weather"].isin(adverse_weather) & 
+            (X_out["Traffic_Level"] == "High")
+        ).astype(int)
+        
+        return X_out
 
 
 def separate_features_and_target(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series]:
