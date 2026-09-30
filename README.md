@@ -7,11 +7,13 @@ An end-to-end Machine Learning engineering project designed to predict food deli
 The objective of this project is to develop a reliable, production-ready regression model that accurately forecasts food delivery times. The project follows standard industry MLOps practices, progressing from exploratory data analysis and modular feature engineering to model comparison, hyperparameter tuning, model serialization, and serving via a FastAPI backend paired with an interactive frontend interface.
 
 ## Current Phase
-**Phase 2: Dataset Understanding**
-- Systematic inspection of the delivery dataset schema, dimensions, and data types.
-- Established the formal Data Dictionary and classified variables ($X$, $Y$, and excluded IDs).
-- Performed statistical profiling, cardinality evaluation, missing value audit, and sanity range checks.
-- Documented findings in `notebooks/01_dataset_understanding.ipynb`.
+**Phase 3: Exploratory Data Analysis (EDA)**
+- Univariate distribution analysis (histograms and KDE curves) for numerical features.
+- Categorical frequency analysis (count plots) across ambient and operational factors.
+- Bivariate scatter and regression analysis against target `Delivery_Time_min`.
+- Multivariate correlation heatmap identifying strong drivers and verifying absence of multicollinearity.
+- Outlier detection and validation via IQR method.
+- Documented findings in `notebooks/02_eda.ipynb`.
 
 ## Project Structure
 ```text
@@ -23,6 +25,7 @@ delivery-time-ml/
 │
 ├── notebooks/             # Jupyter notebooks for exploration and prototyping
 │   ├── 01_dataset_understanding.ipynb
+│   ├── 02_eda.ipynb
 │   └── model_training.ipynb
 │
 ├── src/                   # Production Python source modules
