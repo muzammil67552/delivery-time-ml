@@ -24,16 +24,19 @@ venv.bak/
 # ==============================================================================
 # Machine Learning Artifacts & Trained Models
 # ==============================================================================
-*.pkl
-*.joblib
+# Exclude generic binary checkpoints but keep final production model artifacts
 *.pt
 *.pth
 *.onnx
 *.h5
 *.model
-# Keep models directory tracked while ignoring serialized binary weights/checkpoints
 models/*
 !models/.gitkeep
+!models/delivery_time_pipeline.joblib
+!models/preprocessor.joblib
+!models/*.json
+!models/*.csv
+
 
 # ==============================================================================
 # Datasets & Large Data Files

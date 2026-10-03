@@ -1,0 +1,24 @@
+{
+  "created_at": "2026-10-02T13:36:52.962703",
+  "random_state": 42,
+  "test_size": 0.2,
+  "train_rows": 800,
+  "test_rows": 200,
+  "total_rows": 1000,
+  "feature_count": 12,
+  "feature_names": [
+    "Distance_km",
+    "Weather",
+    "Traffic_Level",
+    "Time_of_Day",
+    "Vehicle_Type",
+    "Preparation_Time_min",
+    "Courier_Experience_yrs",
+    "Distance_Category",
+    "Is_Peak_Meal_Hour",
+    "Prep_Time_per_Km",
+    "Bike_Long_Distance",
+    "Severe_Conditions"
+  ],
+  "target_column": "Delivery_Time_min"
+}

@@ -1,0 +1,32 @@
+{
+  "phase": "Phase 10: Model Comparison & Selection",
+  "selected_model": "Linear Regression",
+  "model_type": "Parametric Linear (Ordinary Least Squares)",
+  "selection_basis": "Empirical Holdout Test Set Performance & Generalization Audit",
+  "selection_date": "2026-10-03",
+  "test_metrics": {
+    "mae": 6.1724,
+    "rmse": 9.0711,
+    "r2": 0.8164,
+    "mse": 82.2857
+  },
+  "train_metrics": {
+    "mae": 6.6276,
+    "rmse": 10.8381,
+    "r2": 0.763,
+    "mse": 117.4652
+  },
+  "generalization_gap": {
+    "delta_mae": -0.4552,
+    "delta_rmse": -1.767,
+    "delta_r2": 0.0534,
+    "status": "zero_overfitting"
+  },
+  "comparison_ranks": {
+    "mae_rank": 1,
+    "rmse_rank": 1,
+    "r2_rank": 1,
+    "overfitting_resilience_rank": 1
+  },
+  "status": "Current Best Candidate Model (Pending Phase 11 Hyperparameter Tuning)"
+}

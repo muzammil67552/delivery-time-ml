@@ -1,0 +1,63 @@
+{
+  "project": "Delivery Time Prediction ML",
+  "phase": "Phase 13: Final Model & Overfitting Analysis",
+  "approval_status": "APPROVED_FOR_PRODUCTION",
+  "selected_algorithm": "Linear Regression",
+  "model_class": "sklearn.linear_model.LinearRegression",
+  "hyperparameters": {
+    "fit_intercept": true,
+    "copy_X": true,
+    "n_jobs": null,
+    "positive": false
+  },
+  "feature_schema": {
+    "raw_input_features": [
+      "Distance_km",
+      "Weather",
+      "Traffic_Level",
+      "Time_of_Day",
+      "Vehicle_Type",
+      "Preparation_Time_min",
+      "Courier_Experience_yrs"
+    ],
+    "engineered_features": [
+      "Distance_Category",
+      "Is_Peak_Meal_Hour",
+      "Prep_Time_per_Km",
+      "Bike_Long_Distance",
+      "Severe_Conditions"
+    ],
+    "total_features_to_model": 12
+  },
+  "preprocessing_pipeline": {
+    "numerical_transformers": [
+      "SimpleImputer(strategy='median')",
+      "StandardScaler()"
+    ],
+    "ordinal_transformers": [
+      "SimpleImputer(strategy='most_frequent')",
+      "OrdinalEncoder(Traffic, Distance)"
+    ],
+    "nominal_transformers": [
+      "SimpleImputer(strategy='most_frequent')",
+      "OneHotEncoder(handle_unknown='ignore')"
+    ],
+    "passthrough_features": [
+      "Is_Peak_Meal_Hour",
+      "Bike_Long_Distance",
+      "Severe_Conditions"
+    ]
+  },
+  "final_evaluation_metrics": {
+    "train_mae": 6.6276,
+    "train_rmse": 10.8381,
+    "train_r2": 0.763,
+    "cv_mae": 6.7857,
+    "cv_rmse": 11.0122,
+    "cv_r2": 0.7512,
+    "test_mae": 6.1724,
+    "test_rmse": 9.0711,
+    "test_r2": 0.8164,
+    "test_mae_improvement_vs_baseline_pct": "-64.73%"
+  }
+}

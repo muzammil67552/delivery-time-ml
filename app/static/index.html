@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Delivery Time Prediction</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div class="app-container">
+    <header class="app-header">
+      <div class="badge">Phase 17 — Simple Frontend</div>
+      <h1>Delivery Time Predictor</h1>
+      <p class="subtitle">Estimate food order delivery durations in minutes using the production ML pipeline.</p>
+    </header>
+
+    <main class="main-card">
+      <form id="prediction-form" onsubmit="return false;" novalidate>
+        <div class="form-grid">
+          <!-- Distance (km) -->
+          <div class="form-group">
+            <label for="distance">Distance (km) <span class="required">*</span></label>
+            <input 
+              type="number" 
+              id="distance" 
+              name="Distance_km" 
+              step="0.1" 
+              min="0.1" 
+              max="100" 
+              value="8.5" 
+              placeholder="e.g. 8.5" 
+              required 
+            />
+            <span class="field-hint">Range: 0.1 to 100.0 km</span>
+          </div>
+
+          <!-- Weather Condition -->
+          <div class="form-group">
+            <label for="weather">Weather Condition <span class="required">*</span></label>
+            <select id="weather" name="Weather" required>
+              <option value="Clear" selected>Clear</option>
+              <option value="Rainy">Rainy</option>
+              <option value="Foggy">Foggy</option>
+              <option value="Snowy">Snowy</option>
+              <option value="Windy">Windy</option>
+            </select>
+            <span class="field-hint">Current atmospheric state</span>
+          </div>
+
+          <!-- Traffic Level -->
+          <div class="form-group">
+            <label for="traffic">Traffic Level <span class="required">*</span></label>
+            <select id="traffic" name="Traffic_Level" required>
+              <option value="Low">Low</option>
+              <option value="Medium" selected>Medium</option>
+              <option value="High">High</option>
+            </select>
+            <span class="field-hint">Road congestion intensity</span>
+          </div>
+
+          <!-- Time of Day -->
+          <div class="form-group">
+            <label for="time-of-day">Time of Day <span class="required">*</span></label>
+            <select id="time-of-day" name="Time_of_Day" required>
+              <option value="Morning">Morning</option>
+              <option value="Afternoon">Afternoon</option>
+              <option value="Evening" selected>Evening</option>
+              <option value="Night">Night</option>
+            </select>
+            <span class="field-hint">Order dispatch window</span>
+          </div>
+
+          <!-- Vehicle Type -->
+          <div class="form-group">
+            <label for="vehicle">Courier Vehicle <span class="required">*</span></label>
+            <select id="vehicle" name="Vehicle_Type" required>
+              <option value="Bike">Bike</option>
+              <option value="Scooter" selected>Scooter</option>
+              <option value="Car">Car</option>
+            </select>
+            <span class="field-hint">Vehicle used for transport</span>
+          </div>
+
+          <!-- Preparation Time (min) -->
+          <div class="form-group">
+            <label for="prep-time">Kitchen Prep Time (min) <span class="required">*</span></label>
+            <input 
+              type="number" 
+              id="prep-time" 
+              name="Preparation_Time_min" 
+              step="1" 
+              min="0" 
+              max="180" 
+              value="15" 
+              placeholder="e.g. 15" 
+              required 
+            />
+            <span class="field-hint">Range: 0 to 180 min</span>
+          </div>
+
+          <!-- Courier Experience (yrs) -->
+          <div class="form-group full-width">
+            <label for="experience">Courier Experience (years) <span class="required">*</span></label>
+            <input 
+              type="number" 
+              id="experience" 
+              name="Courier_Experience_yrs" 
+              step="0.5" 
+              min="0" 
+              max="50" 
+              value="3.0" 
+              placeholder="e.g. 3.0" 
+              required 
+            />
+            <span class="field-hint">Range: 0 to 50 years</span>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" id="submit-btn" class="btn btn-primary">
+            <span class="btn-text">Predict Delivery Time</span>
+            <span class="spinner hidden" id="spinner"></span>
+          </button>
+          <button type="button" id="reset-btn" class="btn btn-secondary">
+            Reset Defaults
+          </button>
+        </div>
+      </form>
+
+      <!-- Prediction Result Card -->
+      <div id="result-card" class="result-card hidden">
+        <div class="result-icon">&#9201;</div>
+        <div class="result-content">
+          <div class="result-label">Estimated Delivery Time</div>
+          <div class="result-value">
+            <span id="predicted-minutes">--</span>
+            <span class="unit">minutes</span>
+          </div>
+          <div class="result-meta" id="result-meta">Predicted using Phase 15 Scikit-Learn Pipeline</div>
+        </div>
+      </div>
+
+      <!-- Error Banner -->
+      <div id="error-card" class="error-card hidden">
+        <div class="error-icon">&#9888;</div>
+        <div class="error-message" id="error-message">An error occurred while communicating with the API.</div>
+      </div>
+    </main>
+
+    <footer class="app-footer">
+      <div class="api-target">
+        API Endpoint: <code id="api-endpoint-label">/predict</code>
+      </div>
+      <p>Delivery Time Prediction ML &bull; FastAPI + Scikit-Learn Production Serving</p>
+    </footer>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

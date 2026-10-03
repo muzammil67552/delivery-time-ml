@@ -1,0 +1,5 @@
+Model,Type,MAE,MSE,RMSE,R2,Notes
+Baseline (Training Mean),Heuristic Baseline,17.5014,450.8151,21.2324,-0.0058,Constant prediction (57.05 min) from y_train mean
+Linear Regression,Parametric Linear,6.1724,82.2857,9.0711,0.8164,Ordinary Least Squares on scaled & one-hot features
+Decision Tree,Non-parametric Tree,9.0300,168.0200,12.9623,0.6251,Default recursive binary partition tree (random_state=42)
+Random Forest,Ensemble Bagging,6.9794,95.1849,9.7563,0.7876,Ensemble of 100 bootstrapped trees (random_state=42)
