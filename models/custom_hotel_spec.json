@@ -1,0 +1,27 @@
+{
+  "hotel_name": "Demo",
+  "source_filename": "Demo_Restaurant_Raw_Data_2000.xlsx",
+  "total_samples": 885,
+  "train_samples": 708,
+  "test_samples": 177,
+  "imputed_features": [
+    "Time_of_Day",
+    "Vehicle_Type",
+    "Courier_Experience_yrs"
+  ],
+  "baseline_metrics": {
+    "mae": 34.3045,
+    "mse": 1904.8047,
+    "rmse": 43.6441,
+    "r2": -0.0197
+  },
+  "custom_model_metrics": {
+    "mae": 20.6366,
+    "mse": 632.7827,
+    "rmse": 25.1552,
+    "r2": 0.6612
+  },
+  "cv_mae": 18.5319,
+  "mae_improvement_pct": 39.84,
+  "trained_model_path": "E:\\my-project\\delivery-time-ml\\models\\custom_hotel_pipeline.joblib"
+}

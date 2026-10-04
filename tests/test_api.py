@@ -9,8 +9,10 @@ Verifies:
 8. Frontend assets and Frontend -> API prediction flow
 """
 
+import io
 import pytest
 from fastapi.testclient import TestClient
+
 
 
 def test_03_root_endpoint(client: TestClient):
@@ -134,3 +136,217 @@ def test_08_frontend_to_api_flow(client: TestClient):
     data = response.json()
     assert "predicted_delivery_time_min" in data
     assert data["predicted_delivery_time_min"] > 0
+
+
+def test_09_download_templates(client: TestClient):
+    """Test 9: Verify sample template download endpoints return valid spreadsheet data."""
+    # Test CSV template
+    csv_resp = client.get("/api/sample-template?template_type=prediction&format=csv")
+    assert csv_resp.status_code == 200
+    assert "Distance_km" in csv_resp.text
+
+    # Test Excel template
+    xlsx_resp = client.get("/api/sample-template?template_type=prediction&format=xlsx")
+    assert xlsx_resp.status_code == 200
+    assert len(xlsx_resp.content) > 100
+
+
+def test_10_batch_prediction_endpoint(client: TestClient):
+    """Test 10: Verify batch prediction endpoint processes uploaded CSV files and provides downloads."""
+    csv_content = (
+        "Distance_km,Weather,Traffic_Level,Time_of_Day,Vehicle_Type,Preparation_Time_min,Courier_Experience_yrs\n"
+        "8.5,Clear,Medium,Evening,Scooter,15.0,3.0\n"
+        "12.0,Rainy,High,Night,Car,20.0,5.0\n"
+    )
+    files = {"file": ("test_orders.csv", io.BytesIO(csv_content.encode("utf-8")), "text/csv")}
+
+    response = client.post("/api/batch-predict", files=files)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["total_orders"] == 2
+    assert "download_id" in data
+    assert len(data["preview"]) == 2
+
+    # Test downloading the generated batch result
+    dl_resp = client.get(f"/api/download-batch/{data['download_id']}")
+    assert dl_resp.status_code == 200
+    assert len(dl_resp.content) > 0
+
+
+def test_11_model_status_endpoint(client: TestClient):
+    """Test 11: Verify model status endpoint reports availability information."""
+    response = client.get("/api/model-status")
+    assert response.status_code == 200
+    data = response.json()
+    assert "custom_model_available" in data
+
+
+def test_12_hotel_profile_flow(client: TestClient):
+    """Test 12: Verify hotel profile creation, persistence in SQLite, and retrieval."""
+    # Read initial status
+    initial_resp = client.get("/api/hotel-profile")
+    assert initial_resp.status_code == 200
+    initial_data = initial_resp.json()
+    assert "is_configured" in initial_data
+
+    # Save hotel profile
+    payload = {
+        "hotel_name": "The Grand Royal Palace",
+        "branch_or_address": "742 Evergreen Terrace, Sector 5",
+        "contact_email": "concierge@grandroyal.com",
+        "contact_phone": "+1-800-555-0199",
+        "default_prep_time_min": 18.0,
+        "default_vehicle_type": "Scooter",
+    }
+    save_resp = client.post("/api/hotel-profile", json=payload)
+    assert save_resp.status_code == 200
+    save_data = save_resp.json()
+    assert save_data["is_configured"] is True
+    assert save_data["profile"]["hotel_name"] == "The Grand Royal Palace"
+    assert save_data["profile"]["default_prep_time_min"] == 18.0
+
+    # Verify retrieval
+    get_resp = client.get("/api/hotel-profile")
+    assert get_resp.status_code == 200
+    get_data = get_resp.json()
+    assert get_data["profile"]["hotel_name"] == "The Grand Royal Palace"
+
+
+def test_13_order_history_logging(client: TestClient, valid_delivery_payload):
+    """Test 13: Verify predictions are automatically logged into SQLite order history."""
+    # Execute a prediction
+    pred_resp = client.post("/predict", json=valid_delivery_payload)
+    assert pred_resp.status_code == 200
+
+    # Retrieve history
+    history_resp = client.get("/api/order-history?limit=10")
+    assert history_resp.status_code == 200
+    history_data = history_resp.json()
+    assert history_data["total"] >= 1
+    assert len(history_data["orders"]) >= 1
+
+    latest_order = history_data["orders"][0]
+    assert latest_order["distance_km"] == valid_delivery_payload["Distance_km"]
+    assert "predicted_time_min" in latest_order
+    assert latest_order["source_type"] == "single"
+
+
+def test_14_city_presets_endpoint(client: TestClient):
+    """Test 14: Verify GET '/api/city-presets' returns available cities and landmarks."""
+    response = client.get("/api/city-presets")
+    assert response.status_code == 200
+    data = response.json()
+    assert "presets" in data
+    assert "New York" in data["presets"]
+    assert "landmarks" in data["presets"]["New York"]
+    assert len(data["presets"]["New York"]["landmarks"]) > 0
+
+
+def test_15_calculate_route_endpoint(client: TestClient):
+    """Test 15: Verify GET '/api/calculate-route' computes road distance and polyline waypoints."""
+    # From Hotel in Manhattan to Times Square
+    params = {
+        "origin_lat": 40.7306,
+        "origin_lng": -73.9866,
+        "dest_lat": 40.7580,
+        "dest_lng": -73.9855,
+    }
+    response = client.get("/api/calculate-route", params=params)
+    assert response.status_code == 200
+    data = response.json()
+    assert "distance_km" in data
+    assert data["distance_km"] > 0
+    assert "route_coords" in data
+    assert len(data["route_coords"]) >= 2
+    assert "duration_min" in data
+    assert "source" in data
+
+
+def test_16_predict_with_destination_address_and_coords(client: TestClient, valid_delivery_payload):
+    """Test 16: Verify POST '/predict' handles destination address and GPS dropoff coordinates."""
+    payload = valid_delivery_payload.copy()
+    payload["Destination_Address"] = "Empire State Commercial Hub, 350 5th Ave"
+    payload["Dropoff_Lat"] = 40.7484
+    payload["Dropoff_Lng"] = -73.9857
+
+    response = client.post("/predict", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert "predicted_delivery_time_min" in data
+
+    # Verify that destination address was logged in SQLite
+    history_resp = client.get("/api/order-history?limit=1")
+    assert history_resp.status_code == 200
+    history = history_resp.json()
+    assert history["orders"][0]["destination_address"] == "Empire State Commercial Hub, 350 5th Ave"
+
+
+def test_17_riders_crud_and_fleet_stats(client: TestClient):
+    """Test 17: Verify rider registration, GPS location update, status toggle, and fleet stats."""
+    # 1. Fetch initial riders list
+    list_resp = client.get("/api/riders")
+    assert list_resp.status_code == 200
+    list_data = list_resp.json()
+    assert "riders" in list_data
+    assert "total" in list_data
+
+    # 2. Register a new courier
+    new_rider_payload = {
+        "name": "Alex Mercer",
+        "phone": "+1-555-0199",
+        "vehicle_type": "Scooter",
+        "courier_exp_yrs": 4.5,
+        "rating": 4.9,
+        "status": "Available",
+        "current_address": "Central District Hub, Lane 4",
+        "current_lat": 40.7320,
+        "current_lng": -73.9870
+    }
+    create_resp = client.post("/api/riders", json=new_rider_payload)
+    assert create_resp.status_code in (200, 201)
+    rider_info = create_resp.json()
+    assert "id" in rider_info
+    rider_id = rider_info["id"]
+    assert rider_info.get("rider_name") == "Alex Mercer" or rider_info.get("name") == "Alex Mercer"
+    assert rider_info["vehicle_type"] == "Scooter"
+    assert rider_info["courier_exp_yrs"] == 4.5
+
+    # 3. Fetch single rider by ID
+    get_rider_resp = client.get(f"/api/riders/{rider_id}")
+    assert get_rider_resp.status_code == 200
+    assert get_rider_resp.json()["id"] == rider_id
+
+    # 4. Update GPS location
+    loc_payload = {
+        "lat": 40.7410,
+        "lng": -73.9890,
+        "address": "Updated Dispatch Station 7"
+    }
+    loc_resp = client.put(f"/api/riders/{rider_id}/location", json=loc_payload)
+    assert loc_resp.status_code == 200
+    assert loc_resp.json()["current_lat"] == 40.7410
+
+    # 5. Update Status
+    status_resp = client.patch(f"/api/riders/{rider_id}/status", json={"status": "On Delivery"})
+    assert status_resp.status_code == 200
+    assert status_resp.json()["status"] == "On Delivery"
+
+    # 6. Check Fleet Stats
+    stats_resp = client.get("/api/fleet/stats")
+    assert stats_resp.status_code == 200
+    stats_data = stats_resp.json()
+    stats = stats_data.get("stats", stats_data)
+    assert "total_riders" in stats
+    assert stats["total_riders"] >= 1
+    assert "available_riders" in stats
+
+
+
+    # 7. Delete the created rider
+    del_resp = client.delete(f"/api/riders/{rider_id}")
+    assert del_resp.status_code == 200
+    assert del_resp.json()["success"] is True
+
+
+
+

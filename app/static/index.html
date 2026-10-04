@@ -3,161 +3,946 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Delivery Time Prediction</title>
-  <link rel="stylesheet" href="style.css" />
+  <title>Delivery Time Prediction & Merchant Intelligence</title>
+  <link rel="stylesheet" href="style.css?v=15" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <!-- Leaflet.js for Interactive Live Map & Courier GPS Tracker (Option 1 & 3) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <style>
+    /* Top-Navbar & Modern Responsive Layout */
+    body {
+      margin: 0 !important;
+      padding: 0 0 3rem 0 !important;
+      display: block !important;
+      background-color: var(--bg-color) !important;
+    }
+    .top-navbar {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border-color);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+      width: 100%;
+      transition: opacity 0.2s ease, visibility 0.2s ease;
+    }
+    /* Hide top navbar when map modal is expanded */
+    body.map-expanded-view .top-navbar,
+    body:has(.expanded-modal) .top-navbar {
+      display: none !important;
+    }
+    .navbar-container {
+      max-width: 1140px;
+      margin: 0 auto;
+      padding: 0.65rem 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .navbar-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: default;
+      user-select: none;
+    }
+    .navbar-brand .brand-icon {
+      font-size: 1.4rem;
+      line-height: 1;
+    }
+    .navbar-brand .brand-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text-main);
+      letter-spacing: -0.02em;
+    }
+    .navbar-brand .brand-badge {
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: var(--primary);
+      background: var(--primary-light);
+      padding: 0.15rem 0.45rem;
+      border-radius: 6px;
+      margin-left: 0.25rem;
+    }
+    .navbar-hotel-chip {
+      display: flex;
+      align-items: center;
+      margin-left: 0.5rem;
+    }
+    .hotel-chip-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.35rem 0.75rem;
+      background: #f8fafc;
+      border: 1px solid var(--border-color);
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-main);
+      text-decoration: none;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+    .hotel-chip-link:hover {
+      background: #eef2ff;
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+    .hotel-chip-badge {
+      font-size: 0.68rem;
+      background: #ecfdf5;
+      color: #047857;
+      padding: 0.15rem 0.45rem;
+      border-radius: 6px;
+      border: 1px solid #a7f3d0;
+    }
+    .app-container {
+      width: 100% !important;
+      max-width: 1140px !important;
+      margin: 1.5rem auto 0 auto !important;
+      padding: 0 1.25rem !important;
+    }
+    .app-header {
+      text-align: center;
+      margin-bottom: 1.75rem !important;
+    }
+    .app-header h1 {
+      font-size: 1.85rem !important;
+      margin-bottom: 0.35rem !important;
+    }
+    .app-header .subtitle {
+      margin-bottom: 0 !important;
+    }
+    .content-split {
+      display: flex !important;
+      flex-direction: row !important;
+      gap: 1.75rem !important;
+      align-items: flex-start !important;
+    }
+    .left-col {
+      flex: 1 !important;
+      min-width: 320px !important;
+    }
+    .right-col {
+      flex: 1.15 !important;
+      min-width: 320px !important;
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 1.25rem !important;
+    }
+    .right-col .map-section-wrapper {
+      margin-bottom: 0 !important;
+    }
+    .right-col .map-container-box:not(.expanded-modal) {
+      height: 250px !important;
+    }
+    .right-col .map-container-box.expanded-modal {
+      position: fixed !important;
+      top: 50% !important;
+      left: 50% !important;
+      transform: translate(-50%, -50%) !important;
+      width: min(86vw, 86vh, 780px) !important;
+      height: min(86vw, 86vh, 780px) !important;
+      max-width: 780px !important;
+      max-height: 780px !important;
+      aspect-ratio: 1 / 1 !important;
+      z-index: 10000 !important;
+      border-radius: 18px !important;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.65), 0 0 0 100vmax rgba(15, 23, 42, 0.75) !important;
+      background: #ffffff !important;
+      display: flex !important;
+      flex-direction: column !important;
+      overflow: hidden !important;
+    }
+    .right-col .map-container-box.expanded-modal .map-modal-top-bar {
+      display: flex !important;
+      flex: 0 0 48px !important;
+      height: 48px !important;
+      position: relative !important;
+      border-bottom: 1px solid var(--border-color);
+      background: rgba(255, 255, 255, 0.98);
+      z-index: 600;
+    }
+    .right-col .map-container-box.expanded-modal .leaflet-map-canvas {
+      flex: 1 1 auto !important;
+      width: 100% !important;
+      height: calc(100% - 48px) !important;
+      margin-top: 0 !important;
+      position: relative !important;
+      z-index: 10;
+    }
+    @media (max-width: 860px) {
+      .navbar-container {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.6rem;
+      }
+      .nav-tabs {
+        overflow-x: auto;
+        width: 100%;
+        scrollbar-width: none;
+      }
+      .content-split {
+        flex-direction: column !important;
+      }
+      .left-col, .right-col {
+        width: 100% !important;
+        min-width: 0 !important;
+      }
+    }
+  </style>
 </head>
 <body>
+  <!-- Top Navigation Bar (Single Prediction, Batch Excel, Retraining, History) -->
+  <nav class="top-navbar">
+    <div class="navbar-container">
+      <div class="navbar-brand">
+        <span class="brand-icon">&#9889;</span>
+        <span class="brand-title">Delivery Time Predictor</span>
+        <span class="brand-badge">ML Platform</span>
+      </div>
+      <div class="nav-tabs" role="tablist">
+        <button type="button" class="tab-btn active" data-tab="single-tab" id="tab-single">
+          <span class="tab-icon">&#9889;</span> Single Prediction
+        </button>
+        <button type="button" class="tab-btn" data-tab="batch-tab" id="tab-batch">
+          <span class="tab-icon">&#128196;</span> Batch Excel / CSV
+        </button>
+        <button type="button" class="tab-btn" data-tab="retrain-tab" id="tab-retrain">
+          <span class="tab-icon">&#128640;</span> Model Retraining
+        </button>
+        <button type="button" class="tab-btn" data-tab="history-tab" id="tab-history">
+          <span class="tab-icon">&#128221;</span> Order History (<span id="history-count-badge">0</span>)
+        </button>
+        <button type="button" class="tab-btn" data-tab="riders-tab" id="tab-riders">
+          <span class="tab-icon">&#128757;</span> Rider Fleet (<span id="riders-count-badge">0</span>)
+        </button>
+      </div>
+      <div class="navbar-hotel-chip" id="navbar-hotel-chip">
+        <a href="/welcome" class="hotel-chip-link" title="Click to view/switch hotel profile or register new hotel">
+          <span class="hotel-chip-icon">&#127976;</span>
+          <span class="hotel-chip-name" id="navbar-hotel-name">Setup Hotel</span>
+          <span class="hotel-chip-badge" id="navbar-model-badge">&#9889; Production Model</span>
+        </a>
+      </div>
+    </div>
+  </nav>
+
   <div class="app-container">
     <header class="app-header">
-      <div class="badge">Phase 17 — Simple Frontend</div>
-      <h1>Delivery Time Predictor</h1>
-      <p class="subtitle">Estimate food order delivery durations in minutes using the production ML pipeline.</p>
+      <h1>Real-Time Delivery Duration Predictor</h1>
+      <p class="subtitle">Production ML inference engine with interactive street map routing and live GPS courier tracking.</p>
     </header>
 
-    <main class="main-card">
-      <form id="prediction-form" onsubmit="return false;" novalidate>
-        <div class="form-grid">
-          <!-- Distance (km) -->
-          <div class="form-group">
-            <label for="distance">Distance (km) <span class="required">*</span></label>
-            <input 
-              type="number" 
-              id="distance" 
-              name="Distance_km" 
-              step="0.1" 
-              min="0.1" 
-              max="100" 
-              value="8.5" 
-              placeholder="e.g. 8.5" 
-              required 
-            />
-            <span class="field-hint">Range: 0.1 to 100.0 km</span>
+    <!-- =========================================================================
+         TAB 1: Single Order Prediction (Side-by-Side)
+         ========================================================================= -->
+    <main class="main-card tab-content active" id="single-tab">
+      <div class="content-split">
+        <!-- Left Side: Order Parameters Form -->
+        <div class="left-col">
+          <div class="section-title">Order Parameters</div>
+          <form id="prediction-form" onsubmit="return false;" novalidate>
+            <div class="form-grid">
+              <!-- Distance (km) -->
+              <div class="form-group">
+                <div class="label-with-badge">
+                  <label for="distance">Distance (km) <span class="required">*</span></label>
+                  <span class="sync-badge" id="distance-sync-badge">&#128205; Sync'd from Map</span>
+                </div>
+                <input 
+                  type="number" 
+                  id="distance" 
+                  name="Distance_km" 
+                  step="0.1" 
+                  min="0.1" 
+                  max="100" 
+                  value="8.5" 
+                  placeholder="e.g. 8.5" 
+                  required 
+                />
+                <span class="field-hint">Auto-calculated by road routing (editable)</span>
+              </div>
+
+              <!-- Weather Condition -->
+              <div class="form-group">
+                <label for="weather">Weather Condition <span class="required">*</span></label>
+                <select id="weather" name="Weather" required>
+                  <option value="Clear" selected>Clear</option>
+                  <option value="Rainy">Rainy</option>
+                  <option value="Foggy">Foggy</option>
+                  <option value="Snowy">Snowy</option>
+                  <option value="Windy">Windy</option>
+                </select>
+                <span class="field-hint">Current atmospheric state</span>
+              </div>
+
+              <!-- Traffic Level -->
+              <div class="form-group">
+                <label for="traffic">Traffic Level <span class="required">*</span></label>
+                <select id="traffic" name="Traffic_Level" required>
+                  <option value="Low">Low</option>
+                  <option value="Medium" selected>Medium</option>
+                  <option value="High">High</option>
+                </select>
+                <span class="field-hint">Road congestion intensity</span>
+              </div>
+
+              <!-- Time of Day -->
+              <div class="form-group">
+                <label for="time-of-day">Time of Day <span class="required">*</span></label>
+                <select id="time-of-day" name="Time_of_Day" required>
+                  <option value="Morning">Morning</option>
+                  <option value="Afternoon">Afternoon</option>
+                  <option value="Evening" selected>Evening</option>
+                  <option value="Night">Night</option>
+                </select>
+                <span class="field-hint">Order dispatch window</span>
+              </div>
+
+              <!-- Auto-Assign Courier from Fleet -->
+              <div class="form-group full-width" style="background: #f8fafc; border: 1px dashed var(--border-color); padding: 0.65rem 0.85rem; border-radius: 8px;">
+                <div class="label-with-badge">
+                  <label for="assign-rider-select" style="margin-bottom: 0; cursor: pointer;">
+                    <span style="color: var(--primary);">&#128757;</span> Auto-Assign Active Courier
+                  </label>
+                  <span class="sync-badge" id="assigned-rider-badge">Live Fleet</span>
+                </div>
+                <select id="assign-rider-select" style="margin-top: 0.35rem;">
+                  <option value="">-- Manual Input (or pick courier to auto-fill vehicle & experience) --</option>
+                </select>
+                <span class="field-hint" id="assigned-rider-hint">Selecting a courier auto-fills vehicle mode, experience, and syncs dispatch</span>
+              </div>
+
+              <!-- Vehicle Type -->
+              <div class="form-group">
+                <label for="vehicle">Courier Vehicle <span class="required">*</span></label>
+                <select id="vehicle" name="Vehicle_Type" required>
+                  <option value="Bike">Bike</option>
+                  <option value="Scooter" selected>Scooter</option>
+                  <option value="Car">Car</option>
+                </select>
+                <span class="field-hint">Vehicle used for transport</span>
+              </div>
+
+              <!-- Preparation Time (min) -->
+              <div class="form-group">
+                <label for="prep-time">Kitchen Prep Time (min) <span class="required">*</span></label>
+                <input 
+                  type="number" 
+                  id="prep-time" 
+                  name="Preparation_Time_min" 
+                  step="1" 
+                  min="0" 
+                  max="180" 
+                  value="15" 
+                  placeholder="e.g. 15" 
+                  required 
+                />
+                <span class="field-hint">Range: 0 to 180 min</span>
+              </div>
+
+              <!-- Courier Experience (yrs) -->
+              <div class="form-group full-width">
+                <label for="experience">Courier Experience (years) <span class="required">*</span></label>
+                <input 
+                  type="number" 
+                  id="experience" 
+                  name="Courier_Experience_yrs" 
+                  step="0.5" 
+                  min="0" 
+                  max="50" 
+                  value="3.0" 
+                  placeholder="e.g. 3.0" 
+                  required 
+                />
+                <span class="field-hint">Range: 0 to 50 years</span>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" id="submit-btn" class="btn btn-primary">
+                <span class="btn-text">Predict Delivery Time</span>
+                <span class="spinner hidden" id="spinner"></span>
+              </button>
+              <button type="button" id="reset-btn" class="btn btn-secondary">
+                Reset Defaults
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Right Side: Estimated Result (Top) + Delivery Route & Map (Below) -->
+        <div class="right-col">
+          <div class="section-title">Estimated Result</div>
+
+          <!-- Idle State Card -->
+          <div id="idle-card" class="result-card idle-card">
+            <div class="result-icon">&#9201;</div>
+            <div class="result-content">
+              <div class="result-label">Delivery Estimate</div>
+              <div class="idle-text">Enter order details on the left and click <strong>Predict Delivery Time</strong> to view the estimated duration.</div>
+            </div>
           </div>
 
-          <!-- Weather Condition -->
-          <div class="form-group">
-            <label for="weather">Weather Condition <span class="required">*</span></label>
-            <select id="weather" name="Weather" required>
-              <option value="Clear" selected>Clear</option>
-              <option value="Rainy">Rainy</option>
-              <option value="Foggy">Foggy</option>
-              <option value="Snowy">Snowy</option>
-              <option value="Windy">Windy</option>
-            </select>
-            <span class="field-hint">Current atmospheric state</span>
+          <!-- Prediction Result Card -->
+          <div id="result-card" class="result-card hidden">
+            <div class="result-icon">&#9201;</div>
+            <div class="result-content">
+              <div class="result-label">Estimated Delivery Time</div>
+              <div class="result-value">
+                <span id="predicted-minutes">--</span>
+                <span class="unit">minutes</span>
+              </div>
+              <div class="result-meta" id="result-meta">Predicted using Phase 15 Scikit-Learn Pipeline &bull; Saved to SQLite</div>
+            </div>
           </div>
 
-          <!-- Traffic Level -->
-          <div class="form-group">
-            <label for="traffic">Traffic Level <span class="required">*</span></label>
-            <select id="traffic" name="Traffic_Level" required>
-              <option value="Low">Low</option>
-              <option value="Medium" selected>Medium</option>
-              <option value="High">High</option>
-            </select>
-            <span class="field-hint">Road congestion intensity</span>
+          <!-- Error Banner -->
+          <div id="error-card" class="error-card hidden">
+            <div class="error-icon">&#9888;</div>
+            <div class="error-message" id="error-message">An error occurred while communicating with the API.</div>
           </div>
 
-          <!-- Time of Day -->
-          <div class="form-group">
-            <label for="time-of-day">Time of Day <span class="required">*</span></label>
-            <select id="time-of-day" name="Time_of_Day" required>
-              <option value="Morning">Morning</option>
-              <option value="Afternoon">Afternoon</option>
-              <option value="Evening" selected>Evening</option>
-              <option value="Night">Night</option>
-            </select>
-            <span class="field-hint">Order dispatch window</span>
-          </div>
+          <!-- Delivery Route & Customer Destination (BELOW Estimated Result) -->
+          <div class="map-section-wrapper">
+            <div class="section-title-row">
+              <span class="section-title" style="margin-bottom: 0; font-size: 0.95rem;">Delivery Route & Customer Destination</span>
+              <div class="map-header-actions">
+                <span class="route-source-badge" id="route-source-badge">Live Map Navigation</span>
+                <button type="button" class="btn-expand-map" id="expand-map-btn" title="Expand map to full modal view for easy dragging & zooming">
+                  <span class="expand-icon">&#x26F6;</span> <span id="expand-btn-text">Expand Map</span>
+                </button>
+              </div>
+            </div>
 
-          <!-- Vehicle Type -->
-          <div class="form-group">
-            <label for="vehicle">Courier Vehicle <span class="required">*</span></label>
-            <select id="vehicle" name="Vehicle_Type" required>
-              <option value="Bike">Bike</option>
-              <option value="Scooter" selected>Scooter</option>
-              <option value="Car">Car</option>
-            </select>
-            <span class="field-hint">Vehicle used for transport</span>
-          </div>
+            <!-- Customer Destination Address Input -->
+            <div class="form-group" style="margin-bottom: 0.65rem;">
+              <label for="destination-address-input" style="font-size: 0.8rem;">Customer Destination Address / Landmark</label>
+              <div class="dest-input-wrapper">
+                <span class="dest-pin">&#128205;</span>
+                <input type="text" id="destination-address-input" placeholder="Type address or click on map..." />
+              </div>
+            </div>
 
-          <!-- Preparation Time (min) -->
-          <div class="form-group">
-            <label for="prep-time">Kitchen Prep Time (min) <span class="required">*</span></label>
-            <input 
-              type="number" 
-              id="prep-time" 
-              name="Preparation_Time_min" 
-              step="1" 
-              min="0" 
-              max="180" 
-              value="15" 
-              placeholder="e.g. 15" 
-              required 
-            />
-            <span class="field-hint">Range: 0 to 180 min</span>
-          </div>
+            <!-- Quick Landmark Preset Pills -->
+            <div class="landmark-pills-row" id="landmark-pills-container">
+              <span class="pills-label">Quick Hubs:</span>
+              <!-- Populated dynamically via JS -->
+            </div>
 
-          <!-- Courier Experience (yrs) -->
-          <div class="form-group full-width">
-            <label for="experience">Courier Experience (years) <span class="required">*</span></label>
-            <input 
-              type="number" 
-              id="experience" 
-              name="Courier_Experience_yrs" 
-              step="0.5" 
-              min="0" 
-              max="50" 
-              value="3.0" 
-              placeholder="e.g. 3.0" 
-              required 
-            />
-            <span class="field-hint">Range: 0 to 50 years</span>
+            <!-- Leaflet Map Container (Expandable to Modal) -->
+            <div class="map-container-box" id="map-container-box">
+              <!-- Top bar visible only in expanded modal mode -->
+              <div class="map-modal-top-bar" id="map-modal-top-bar">
+                <div class="map-modal-title">
+                  <span>&#x26F6;</span>
+                  <strong>Delivery Route Map (Square Modal)</strong>
+                  <span class="map-modal-hint">(Drag 📍 pin &bull; Scroll to zoom &bull; Click anywhere on roads)</span>
+                </div>
+                <button type="button" class="btn-close-modal-icon" id="close-expanded-btn" title="Close expanded map (Esc)">&times;</button>
+              </div>
+
+              <div id="delivery-map" class="leaflet-map-canvas"></div>
+              
+              <!-- Floating Map Overlay Controls & Status -->
+              <div class="map-floating-overlay" id="map-floating-overlay">
+                <div class="map-status-pill">
+                  <span class="pulse-indicator"></span>
+                  <span id="map-status-text">Click map to set dropoff</span>
+                </div>
+                <div class="map-metrics-pill">
+                  <span class="map-distance-val" id="map-distance-badge">8.5 km</span>
+                  <span class="map-time-val" id="map-est-drive">~20 min</span>
+                </div>
+                <button type="button" class="btn-map-action hidden" id="replay-courier-btn" title="Replay courier route animation">
+                  <span>&#128757; Replay</span>
+                </button>
+              </div>
+            </div>
           </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- =========================================================================
+         TAB 2: Batch Excel / CSV Prediction
+         ========================================================================= -->
+    <main class="main-card tab-content hidden" id="batch-tab">
+      <div class="batch-header">
+        <h2>Batch Delivery Time Prediction</h2>
+        <p class="section-desc">Upload today's pending orders in an Excel (.xlsx) or CSV file. The ML pipeline will process every row and generate an annotated spreadsheet with estimated arrival times.</p>
+        <div class="template-box">
+          <span>Need the expected spreadsheet format?</span>
+          <a href="/api/sample-template?type=prediction&format=xlsx" class="link-btn" download>&#128190; Download Sample Excel Template</a>
+          <a href="/api/sample-template?type=prediction&format=csv" class="link-btn" download>&#128196; Download Sample CSV</a>
+        </div>
+      </div>
+
+      <form id="batch-form" class="upload-box-form">
+        <div class="drop-zone" id="batch-drop-zone">
+          <div class="drop-icon">&#128229;</div>
+          <div class="drop-title">Select or drag & drop order spreadsheet</div>
+          <div class="drop-sub">Supported formats: <strong>.xlsx, .xls, .csv</strong></div>
+          <input type="file" id="batch-file-input" accept=".xlsx,.xls,.csv" required />
+          <div class="selected-filename hidden" id="batch-filename-display"></div>
+        </div>
+
+        <div class="batch-options">
+          <label class="checkbox-label">
+            <input type="checkbox" id="use-custom-model-batch" />
+            <span>Use Custom Hotel Retrained Model (if available)</span>
+          </label>
         </div>
 
         <div class="form-actions">
-          <button type="submit" id="submit-btn" class="btn btn-primary">
-            <span class="btn-text">Predict Delivery Time</span>
-            <span class="spinner hidden" id="spinner"></span>
-          </button>
-          <button type="button" id="reset-btn" class="btn btn-secondary">
-            Reset Defaults
+          <button type="submit" id="batch-submit-btn" class="btn btn-primary" disabled>
+            <span class="btn-text">Process & Predict Batch</span>
+            <span class="spinner hidden" id="batch-spinner"></span>
           </button>
         </div>
       </form>
 
-      <!-- Prediction Result Card -->
-      <div id="result-card" class="result-card hidden">
-        <div class="result-icon">&#9201;</div>
-        <div class="result-content">
-          <div class="result-label">Estimated Delivery Time</div>
-          <div class="result-value">
-            <span id="predicted-minutes">--</span>
-            <span class="unit">minutes</span>
+      <!-- Batch Processing Error -->
+      <div id="batch-error-card" class="error-card hidden">
+        <div class="error-icon">&#9888;</div>
+        <div class="error-message" id="batch-error-message">Error processing batch file.</div>
+      </div>
+
+      <!-- Batch Results Section -->
+      <div id="batch-results-section" class="batch-results hidden">
+        <div class="results-header-bar">
+          <h3>Batch Results & Analytics</h3>
+          <a id="batch-download-btn" href="#" class="btn btn-download" download>
+            &#11015; Download Annotated Excel (.xlsx)
+          </a>
+        </div>
+
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-value" id="kpi-total">0</div>
+            <div class="kpi-label">Total Orders Processed</div>
           </div>
-          <div class="result-meta" id="result-meta">Predicted using Phase 15 Scikit-Learn Pipeline</div>
+          <div class="kpi-card">
+            <div class="kpi-value" id="kpi-avg">0.0 min</div>
+            <div class="kpi-label">Average Delivery Time</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-value" id="kpi-range">0 - 0 min</div>
+            <div class="kpi-label">Fastest & Longest Trips</div>
+          </div>
+          <div class="kpi-card alert-kpi">
+            <div class="kpi-value" id="kpi-risk">0</div>
+            <div class="kpi-label">High Delay Risk Orders (&gt;50m)</div>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <div class="table-title">Top 10 Orders Preview</div>
+          <div class="table-scroll">
+            <table class="data-table" id="batch-preview-table">
+              <thead>
+                <tr>
+                  <th>Distance (km)</th>
+                  <th>Weather</th>
+                  <th>Traffic</th>
+                  <th>Time of Day</th>
+                  <th>Vehicle</th>
+                  <th>Prep Time</th>
+                  <th>Courier Exp</th>
+                  <th class="highlight-col">Predicted ETA (min)</th>
+                  <th>Risk Status</th>
+                </tr>
+              </thead>
+              <tbody id="batch-table-body">
+                <!-- Preview rows inserted via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- =========================================================================
+         TAB 3: Custom Hotel Model Retraining
+         ========================================================================= -->
+    <main class="main-card tab-content hidden" id="retrain-tab">
+      <div class="retrain-header">
+        <h2>Automated Hotel Model Retraining</h2>
+        <p class="section-desc">Train a dedicated Machine Learning model custom-tailored to your hotel or restaurant's specific historical deliveries. Upload your past records with actual delivery times to trigger automated data cleaning, feature engineering, and cross-validation.</p>
+        <div class="template-box">
+          <span>Need a training data template?</span>
+          <a href="/api/sample-template?type=training&format=xlsx" class="link-btn" download>&#128190; Download Training Template (.xlsx)</a>
+          <a href="/api/sample-template?type=training&format=csv" class="link-btn" download>&#128196; Download Training Template (.csv)</a>
         </div>
       </div>
 
-      <!-- Error Banner -->
-      <div id="error-card" class="error-card hidden">
+      <form id="retrain-form" class="upload-box-form">
+        <div class="form-group" style="margin-bottom: 1.25rem;">
+          <label for="hotel-name-input">Hotel or Merchant Name</label>
+          <input type="text" id="hotel-name-input" value="The Grand Hotel & Suites" placeholder="e.g. Skyline Bistro" required />
+        </div>
+
+        <div class="drop-zone" id="retrain-drop-zone">
+          <div class="drop-icon">&#128640;</div>
+          <div class="drop-title">Select historical training spreadsheet with Delivery_Time_min</div>
+          <div class="drop-sub">Supported formats: <strong>.xlsx, .xls, .csv</strong> (minimum 50 records)</div>
+          <input type="file" id="retrain-file-input" accept=".xlsx,.xls,.csv" required />
+          <div class="selected-filename hidden" id="retrain-filename-display"></div>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" id="retrain-submit-btn" class="btn btn-primary" disabled>
+            <span class="btn-text">Execute Automated Retraining Pipeline</span>
+            <span class="spinner hidden" id="retrain-spinner"></span>
+          </button>
+        </div>
+      </form>
+
+      <!-- Retrain Error -->
+      <div id="retrain-error-card" class="error-card hidden">
         <div class="error-icon">&#9888;</div>
-        <div class="error-message" id="error-message">An error occurred while communicating with the API.</div>
+        <div class="error-message" id="retrain-error-message">Retraining failed.</div>
+      </div>
+
+      <!-- Retrain Success & Performance Report -->
+      <div id="retrain-results-section" class="retrain-results hidden">
+        <div class="success-banner">
+          <div class="success-icon">&#9989;</div>
+          <div class="success-info">
+            <h3 id="retrain-success-title">Custom Model Successfully Trained!</h3>
+            <p id="retrain-success-desc">The model has been evaluated, serialized, and registered into models/custom_hotel_pipeline.joblib.</p>
+          </div>
+        </div>
+
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-value" id="retrain-samples">0</div>
+            <div class="kpi-label">Training / Test Samples</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-value" id="retrain-mae">0.0 min</div>
+            <div class="kpi-label">Test MAE (Mean Absolute Error)</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-value" id="retrain-r2">0.00</div>
+            <div class="kpi-label">Test R² Score</div>
+          </div>
+          <div class="kpi-card" style="border-color: #a7f3d0; background-color: #ecfdf5;">
+            <div class="kpi-value" id="retrain-lift" style="color: #065f46;">+0.0%</div>
+            <div class="kpi-label" style="color: #065f46;">Error Reduction vs Baseline</div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- =========================================================================
+         TAB 4: SQLite Order Prediction History
+         ========================================================================= -->
+    <main class="main-card tab-content hidden" id="history-tab">
+      <div class="results-header-bar" style="margin-top: 0; padding-bottom: 1rem;">
+        <div>
+          <h2>Order History Log (SQLite)</h2>
+          <p class="section-desc">Permanent log of all real-time single and batch ETA predictions stored securely in SQLite.</p>
+        </div>
+        <div class="history-actions">
+          <button type="button" id="refresh-history-btn" class="btn btn-secondary btn-sm">&#128260; Refresh</button>
+          <button type="button" id="export-history-btn" class="btn btn-secondary btn-sm">&#128190; Export CSV</button>
+          <button type="button" id="clear-history-btn" class="btn btn-danger btn-sm">&#128465; Clear</button>
+        </div>
+      </div>
+
+      <div class="table-container">
+        <div class="table-scroll">
+          <table class="data-table" id="history-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Time Logged</th>
+                <th>Destination</th>
+                <th>Distance</th>
+                <th>Weather</th>
+                <th>Traffic</th>
+                <th>Vehicle</th>
+                <th>Prep Time</th>
+                <th>Courier Exp</th>
+                <th class="highlight-col">Predicted ETA</th>
+                <th>Risk Status</th>
+                <th>Source</th>
+              </tr>
+            </thead>
+            <tbody id="history-table-body">
+              <!-- Dynamically populated via JS -->
+            </tbody>
+          </table>
+        </div>
+        <div id="history-empty-state" class="idle-card hidden" style="margin-top: 1rem; padding: 2rem; text-align: center;">
+          <div class="result-icon">&#128221;</div>
+          <div class="result-content" style="text-align: center;">
+            <div class="result-label">No History Yet</div>
+            <div class="idle-text">Run single predictions or batch Excel processing to see them logged into SQLite.</div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- =========================================================================
+         TAB 5: Rider Fleet Management & Live GPS Tracking
+         ========================================================================= -->
+    <main class="main-card tab-content hidden" id="riders-tab">
+      <!-- Fleet Stats Row -->
+      <div class="fleet-stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#eef2ff; color:#4f46e5;">🛵</div>
+          <div class="stat-info">
+            <span class="stat-value" id="stat-total-riders">0</span>
+            <span class="stat-label">Total Fleet</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#ecfdf5; color:#059669;">🟢</div>
+          <div class="stat-info">
+            <span class="stat-value" id="stat-avail-riders">0</span>
+            <span class="stat-label">Available Couriers</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#eff6ff; color:#2563eb;">📦</div>
+          <div class="stat-info">
+            <span class="stat-value" id="stat-ondelivery-riders">0</span>
+            <span class="stat-label">On Delivery</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#fef3c7; color:#d97706;">⭐</div>
+          <div class="stat-info">
+            <span class="stat-value" id="stat-avg-exp">0 yrs</span>
+            <span class="stat-label">Avg Experience</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 1. Rider Registration Form (Full Width Card Above Fleet List) -->
+      <div class="fleet-register-card">
+        <div class="section-title" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span>&#128100; Register New Courier</span>
+          </div>
+          <span class="badge" style="font-size: 0.72rem; background: var(--primary-light); color: var(--primary); padding: 0.2rem 0.6rem; border-radius: 9999px; font-weight: 600;">
+            &#128225; Real-Time GPS Auto-Sync
+          </span>
+        </div>
+        <p class="section-desc" style="font-size: 0.875rem; margin-bottom: 1.25rem;">
+          Register delivery couriers to your active fleet. Fetch real-time device coordinates automatically via browser GPS or let the system resolve dispatch locations near your hotel hub.
+        </p>
+
+        <form id="rider-register-form" onsubmit="return false;" novalidate>
+          <div class="fleet-form-grid">
+            <!-- Full Name -->
+            <div class="form-group">
+              <label for="rider-name-input">Rider Full Name <span class="required">*</span></label>
+              <input type="text" id="rider-name-input" placeholder="e.g. Tariq Khan" required />
+            </div>
+
+            <!-- Mobile Phone -->
+            <div class="form-group">
+              <label for="rider-phone-input">Mobile / Contact Phone <span class="required">*</span></label>
+              <input type="text" id="rider-phone-input" placeholder="e.g. +92 300 1234567" required />
+            </div>
+
+            <!-- Vehicle Mode -->
+            <div class="form-group">
+              <label for="rider-vehicle-input">Primary Vehicle <span class="required">*</span></label>
+              <select id="rider-vehicle-input" required>
+                <option value="Scooter" selected>Scooter</option>
+                <option value="Bike">Bike (Motorcycle)</option>
+                <option value="Car">Car</option>
+              </select>
+            </div>
+
+            <!-- Experience -->
+            <div class="form-group">
+              <label for="rider-exp-input">Courier Experience (yrs) <span class="required">*</span></label>
+              <input type="number" id="rider-exp-input" min="0" max="50" step="0.5" value="2.5" required />
+            </div>
+
+            <!-- Status -->
+            <div class="form-group">
+              <label for="rider-status-input">Initial Operational Status</label>
+              <select id="rider-status-input">
+                <option value="Available" selected>Available (Ready for Dispatch)</option>
+                <option value="On Delivery">On Delivery</option>
+                <option value="Offline">Offline</option>
+              </select>
+            </div>
+
+            <!-- Starting Rating -->
+            <div class="form-group">
+              <label for="rider-rating-input">Courier Rating (1.0 - 5.0)</label>
+              <input type="number" id="rider-rating-input" min="1.0" max="5.0" step="0.1" value="4.8" />
+            </div>
+
+            <!-- Station Address & Auto-GPS Button (Spans 2 columns) -->
+            <div class="form-group span-2">
+              <div class="label-with-badge">
+                <label for="rider-address-input">Station / Current Location Address</label>
+                <button type="button" class="btn-gps-detect" id="btn-detect-rider-gps" title="Fetch live GPS coordinates using your device location">
+                  <span id="gps-detect-icon">&#128205;</span> Fetch My Device GPS
+                </button>
+              </div>
+              <input type="text" id="rider-address-input" placeholder="e.g. Defence View, Near University Hub" />
+              <span class="field-hint" id="rider-gps-status-hint" style="color: var(--text-muted); font-size: 0.75rem;">
+                Click "Fetch My Device GPS" to auto-detect and lock coordinates
+              </span>
+            </div>
+
+            <!-- Latitude & Longitude (Spans 1 column with inner grid) -->
+            <div class="form-group">
+              <label>Device GPS Coordinates</label>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                <input type="number" id="rider-lat-input" step="0.000001" placeholder="Latitude" />
+                <input type="number" id="rider-lng-input" step="0.000001" placeholder="Longitude" />
+              </div>
+              <span class="field-hint" style="font-size: 0.72rem; color: #64748b;">Auto-populated via GPS or hotel station</span>
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; margin-top: 1.25rem; padding-top: 1rem; border-top: 1px dashed var(--border-color);">
+            <button type="submit" class="btn btn-primary" id="btn-submit-rider" style="min-width: 240px; padding: 0.65rem 1.5rem;">
+              <span class="btn-text">&#10010; Save Courier to Fleet</span>
+              <span class="spinner hidden" id="rider-spinner"></span>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- 2. Active Courier Fleet Cards (Shown Below Registration Form) -->
+      <div class="fleet-list-section">
+        <div class="fleet-list-header">
+          <div>
+            <div class="section-title" style="margin-bottom: 0.2rem; border: none; padding: 0;">
+              <span>Active Courier Fleet</span>
+            </div>
+            <span class="section-desc" style="margin: 0; font-size: 0.85rem;">
+              Real-time registered couriers in your operational dispatch network. Click status to update or ping GPS.
+            </span>
+          </div>
+          <div class="fleet-filters">
+            <button type="button" class="fleet-filter-btn active" data-filter="all">All Couriers</button>
+            <button type="button" class="fleet-filter-btn" data-filter="Available">🟢 Available</button>
+            <button type="button" class="fleet-filter-btn" data-filter="On Delivery">📦 On Delivery</button>
+            <button type="button" class="fleet-filter-btn" data-filter="Offline">⚪ Offline</button>
+          </div>
+        </div>
+
+        <!-- Live Fleet Cards Container -->
+        <div class="riders-card-grid" id="riders-card-container">
+          <!-- Dynamically populated via JS -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="riders-empty-state" class="idle-card hidden" style="margin-top: 1.5rem; padding: 2.5rem; text-align: center;">
+          <div class="result-icon">&#128757;</div>
+          <div class="result-content" style="text-align: center;">
+            <div class="result-label">No Riders Found</div>
+            <div class="idle-text">No couriers match the selected filter. Register a new courier using the form above.</div>
+          </div>
+        </div>
       </div>
     </main>
 
     <footer class="app-footer">
-      <div class="api-target">
-        API Endpoint: <code id="api-endpoint-label">/predict</code>
-      </div>
-      <p>Delivery Time Prediction ML &bull; FastAPI + Scikit-Learn Production Serving</p>
+      <p>Delivery Time Prediction ML &bull; FastAPI + SQLite + Scikit-Learn Production Serving</p>
     </footer>
   </div>
 
-  <script src="script.js"></script>
+
+  <!-- =========================================================================
+       Hotel Profile Setup & Settings Modal
+       ========================================================================= -->
+  <div id="hotel-modal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>&#127976; Hotel & Restaurant Profile</h3>
+        <button type="button" class="modal-close-btn" id="close-modal-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">Configure your establishment details, city hub coordinates, and operational delivery defaults. This information is saved permanently in your local SQLite database.</p>
+        <form id="hotel-profile-form">
+          <div class="form-group" style="margin-bottom: 1rem;">
+            <label for="modal-hotel-name">Hotel / Restaurant Name <span class="required">*</span></label>
+            <input type="text" id="modal-hotel-name" placeholder="e.g. Skyline Grand Hotel & Suites" required />
+          </div>
+
+          <div class="form-group" style="margin-bottom: 1rem;">
+            <label for="modal-city-preset">City Hub Preset</label>
+            <select id="modal-city-preset">
+              <option value="New York" selected>New York, USA (Manhattan)</option>
+              <option value="London">London, UK (West End)</option>
+              <option value="Dubai">Dubai, UAE (Downtown)</option>
+              <option value="San Francisco">San Francisco, USA (Bay Area)</option>
+              <option value="Tokyo">Tokyo, Japan (Shinjuku)</option>
+              <option value="Paris">Paris, France (Central)</option>
+              <option value="Custom">Custom City / Coordinates</option>
+            </select>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 1rem;">
+            <label for="modal-hotel-address">Branch or Physical Address</label>
+            <input type="text" id="modal-hotel-address" placeholder="e.g. Downtown Central Hub, Avenue 5" />
+          </div>
+
+          <div class="form-grid" style="margin-bottom: 1rem;">
+            <div class="form-group">
+              <label for="modal-hotel-lat">Hotel Latitude</label>
+              <input type="number" id="modal-hotel-lat" step="0.0001" value="40.7306" />
+            </div>
+            <div class="form-group">
+              <label for="modal-hotel-lng">Hotel Longitude</label>
+              <input type="number" id="modal-hotel-lng" step="0.0001" value="-73.9866" />
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="modal-prep-time">Default Kitchen Prep Time (min)</label>
+              <input type="number" id="modal-prep-time" min="0" max="180" step="1" value="15" />
+            </div>
+            <div class="form-group">
+              <label for="modal-vehicle">Preferred Transport Mode</label>
+              <select id="modal-vehicle">
+                <option value="Scooter" selected>Scooter</option>
+                <option value="Bike">Bike</option>
+                <option value="Car">Car</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="modal-email">Contact Email</label>
+              <input type="email" id="modal-email" placeholder="kitchen@hotel.com" />
+            </div>
+            <div class="form-group">
+              <label for="modal-phone">Contact Phone</label>
+              <input type="text" id="modal-phone" placeholder="+1 (555) 019-2834" />
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <button type="submit" class="btn btn-primary" id="save-hotel-btn">Save Hotel Profile to SQLite</button>
+            <button type="button" class="btn btn-secondary" id="cancel-modal-btn">Dismiss</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js?v=15"></script>
 </body>
 </html>
+

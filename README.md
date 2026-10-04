@@ -286,6 +286,34 @@ When the server is active, interactive OpenAPI documentation is accessible at:
   }
   ```
 
+#### 4. Batch Excel / CSV Prediction
+- **`POST /api/batch-predict`** (multipart/form-data with `.xlsx` or `.csv`)
+- **Returns**: Batch summary KPIs, preview table, and unique `download_id`.
+
+#### 5. Download Annotated Batch Spreadsheet
+- **`GET /api/download-batch/{download_id}`**
+- **Returns**: Downloadable `.xlsx` file containing original rows plus `Predicted_Delivery_Time_min` and `Delivery_Status_Risk`.
+
+#### 6. Automated Custom Hotel Model Retraining
+- **`POST /api/retrain`** (multipart/form-data with historical dataset including `Delivery_Time_min`)
+- **Returns**: Automated evaluation report (sample counts, baseline MAE vs new model MAE, test RMSE, $R^2$, 5-fold CV MAE, and % error reduction).
+
+#### 7. Sample Templates
+- **`GET /api/sample-template?template_type=prediction&format=xlsx`** (Starter template for batch orders)
+- **`GET /api/sample-template?template_type=training&format=xlsx`** (Starter template for model retraining)
+
+#### 8. Hotel Profile & Operational Defaults (SQLite)
+- **`GET /api/hotel-profile`**: Retrieves the stored hotel profile, city preset, GPS coordinates, and configuration status.
+- **`POST /api/hotel-profile`**: Saves or updates establishment name, address, latitude, longitude, city preset, default kitchen prep time, and preferred fleet vehicle in SQLite.
+
+#### 9. Live Navigation & Route Calculation (Option 1 & 3)
+- **`GET /api/city-presets`**: Returns available city hubs (New York, London, Dubai, Tokyo, Paris, San Francisco) and localized delivery landmarks.
+- **`GET /api/calculate-route`**: Accepts origin and drop-off coordinates, returning computed road distance in km, driving transit duration, and polyline waypoints (with live OSRM and simulated road network fallback).
+
+#### 10. Order Prediction History (SQLite)
+- **`GET /api/order-history`**: Retrieves logged historical predictions with destination addresses, GPS coordinates, timestamps, features, predicted ETA, and risk status.
+- **`DELETE /api/order-history`**: Clears prediction history records.
+
 ---
 
 ## How to Use the Frontend UI
@@ -295,17 +323,18 @@ When the server is active, interactive OpenAPI documentation is accessible at:
    ```text
    http://127.0.0.1:8000/ui
    ```
-   *(Alternatively, navigate to `http://127.0.0.1:8000/static/index.html` or double-click `app/static/index.html` directly).*
-3. Adjust the delivery features:
-   - Distance (km)
-   - Weather condition
-   - Traffic intensity
-   - Dispatch time of day
-   - Vehicle type
-   - Kitchen preparation time
-   - Courier tenure
-4. Click **"Predict Delivery Time"**.
-5. The application asynchronously posts the payload to `/predict` and displays the estimated arrival time in minutes.
+3. **First-time setup / Hotel Configuration**: A welcome onboarding modal prompts you to configure your Hotel/Restaurant name, city hub coordinates, and delivery defaults. This is saved permanently in local SQLite.
+4. **Use the navigation tabs**:
+   - **Single Prediction & Live Map Tracker**:
+     - View the **interactive Leaflet map** showing your hotel hub origin 🏨.
+     - Choose a customer destination by **clicking anywhere on the map**, dragging the destination pin 📍, or clicking a quick landmark button.
+     - The road distance is **automatically calculated** and synchronized directly into the `Distance (km)` input!
+     - Click **Predict Delivery Time**: The ML model predicts the ETA in the right-side card, and an **animated courier icon (🛵/🚲/🚗)** moves along the route polyline with live arrival status!
+   - **Batch Excel / CSV**: Upload a spreadsheet of orders, view instant KPI cards, preview predictions, and click **Download Annotated Excel (.xlsx)**.
+   - **Hotel Model Retraining**: Upload your historical delivery records, click **Execute Automated Retraining Pipeline**, and view your custom model's benchmark lift and evaluation report.
+   - **Order History**: View all logged predictions stored in SQLite with destination addresses, live timestamps, search/filter, and export directly to CSV.
+
+
 
 ---
 

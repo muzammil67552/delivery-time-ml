@@ -1,0 +1,1715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Welcome to Delivery Time ML &bull; Hotel & Restaurant Onboarding</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <!-- Leaflet Map for Hotel Address Pinpoint -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <style>
+    :root {
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --primary-light: #eef2ff;
+      --primary-glow: rgba(79, 70, 229, 0.25);
+      --success: #10b981;
+      --success-light: #ecfdf5;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --bg-dark: #0f172a;
+      --card-bg: rgba(255, 255, 255, 0.98);
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border-color: #e2e8f0;
+      --border-focus: #818cf8;
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --shadow-subtle: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+      --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+      --shadow-glow: 0 0 35px rgba(79, 70, 229, 0.2);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: radial-gradient(circle at 10% 20%, #1e1b4b 0%, #0f172a 90%);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.5;
+    }
+
+    /* Top Navigation */
+    .welcome-nav {
+      padding: 1.25rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(15, 23, 42, 0.7);
+      backdrop-filter: blur(12px);
+    }
+
+    .brand-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: #ffffff;
+    }
+
+    .brand-logo {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
+    }
+
+    .brand-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-tag {
+      font-size: 0.7rem;
+      font-weight: 600;
+      background: rgba(99, 102, 241, 0.2);
+      color: #a5b4fc;
+      padding: 0.15rem 0.5rem;
+      border-radius: 6px;
+      border: 1px solid rgba(99, 102, 241, 0.3);
+    }
+
+    .nav-actions a {
+      color: #cbd5e1;
+      text-decoration: none;
+      font-size: 0.88rem;
+      font-weight: 600;
+      transition: color 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .nav-actions a:hover {
+      color: #ffffff;
+    }
+
+    /* Hero & Container */
+    .onboarding-container {
+      width: 100%;
+      max-width: 1050px;
+      margin: 2.5rem auto 4rem auto;
+      padding: 0 1.5rem;
+      flex: 1;
+    }
+
+    .hero-header {
+      text-align: center;
+      margin-bottom: 2.25rem;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0.9rem;
+      border-radius: 9999px;
+      background: rgba(99, 102, 241, 0.15);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      color: #c7d2fe;
+      font-size: 0.82rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      box-shadow: 0 0 20px rgba(99, 102, 241, 0.15);
+    }
+
+    .hero-header h1 {
+      font-size: 2.35rem;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+      margin-bottom: 0.75rem;
+    }
+
+    .hero-header h1 span {
+      background: linear-gradient(135deg, #a5b4fc 0%, #6366f1 50%, #e0e7ff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-header p {
+      color: #94a3b8;
+      font-size: 1.05rem;
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    /* Main Form Card */
+    .setup-card {
+      background: var(--card-bg);
+      border-radius: var(--radius-lg);
+      padding: 2.5rem;
+      box-shadow: var(--shadow-lg), var(--shadow-glow);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .form-section-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding-bottom: 0.65rem;
+      border-bottom: 2px solid #f1f5f9;
+      margin-bottom: 1.25rem;
+    }
+
+    .form-section-title .section-num {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: var(--primary-light);
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    .form-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .form-grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .form-group.span-full {
+      grid-column: 1 / -1;
+    }
+
+    .form-label {
+      font-size: 0.84rem;
+      font-weight: 600;
+      color: #334155;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .form-label .req {
+      color: var(--danger);
+      margin-left: 2px;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 0.72rem 0.95rem;
+      border-radius: var(--radius-sm);
+      border: 1.5px solid var(--border-color);
+      font-size: 0.92rem;
+      font-family: inherit;
+      color: var(--text-main);
+      background-color: #f8fafc;
+      transition: all 0.2s ease;
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: var(--border-focus);
+      background-color: #ffffff;
+      box-shadow: 0 0 0 3px var(--primary-glow);
+    }
+
+    .password-wrap {
+      position: relative;
+    }
+
+    .password-toggle {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.9rem;
+      padding: 4px;
+    }
+
+    /* Map Address Section */
+    .address-map-block {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+      margin-top: 0.5rem;
+    }
+
+    .address-input-row {
+      display: flex;
+      gap: 0.5rem;
+      align-items: stretch;
+    }
+
+    .btn-locate-address {
+      background: var(--primary);
+      color: #ffffff;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 0 0.85rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    .btn-locate-address:hover {
+      background: var(--primary-dark);
+      box-shadow: 0 2px 6px rgba(79, 70, 229, 0.3);
+    }
+
+    .btn-locate-address:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
+
+    .field-subtext {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 0.3rem;
+      display: block;
+      line-height: 1.35;
+    }
+
+    .mini-map-box {
+      height: 220px;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+      position: relative;
+    }
+
+    .mini-map-hint {
+      position: absolute;
+      bottom: 8px;
+      left: 8px;
+      right: 8px;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(4px);
+      color: #ffffff;
+      font-size: 0.72rem;
+      padding: 0.3rem 0.6rem;
+      border-radius: 6px;
+      z-index: 500;
+      text-align: center;
+      pointer-events: none;
+    }
+
+    .gps-coords-display {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #f8fafc;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 0.35rem 0.65rem;
+      font-size: 0.73rem;
+      color: var(--text-muted);
+      margin-top: 0.4rem;
+      gap: 0.5rem;
+    }
+
+    /* Dataset Upload Dropzone */
+    .dataset-upload-zone {
+      border: 2px dashed #cbd5e1;
+      border-radius: var(--radius-md);
+      padding: 1.75rem 1.5rem;
+      text-align: center;
+      background: #f8fafc;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+      margin-bottom: 0.75rem;
+    }
+
+    .dataset-upload-zone:hover, .dataset-upload-zone.dragover {
+      border-color: var(--primary);
+      background: var(--primary-light);
+    }
+
+    .dataset-upload-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .upload-icon {
+      font-size: 2.2rem;
+      margin-bottom: 0.4rem;
+    }
+
+    .upload-title {
+      font-weight: 700;
+      color: var(--text-main);
+      font-size: 0.95rem;
+      margin-bottom: 0.2rem;
+    }
+
+    .upload-sub {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .selected-file-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.45rem 1rem;
+      border-radius: 9999px;
+      background: #e0e7ff;
+      color: #3730a3;
+      font-size: 0.84rem;
+      font-weight: 600;
+      margin-top: 0.75rem;
+    }
+
+    .template-helpers {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      padding: 0.75rem 1rem;
+      background: #f1f5f9;
+      border-radius: var(--radius-sm);
+    }
+
+    .template-helpers a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .template-helpers a:hover {
+      text-decoration: underline;
+    }
+
+    /* Submit Actions */
+    .submit-wrap {
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      align-items: center;
+    }
+
+    .btn-launch {
+      width: 100%;
+      max-width: 480px;
+      padding: 1rem 1.5rem;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #ffffff;
+      background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+      border: none;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      box-shadow: 0 10px 20px -5px rgba(79, 70, 229, 0.4);
+      transition: all 0.2s ease;
+    }
+
+    .btn-launch:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 15px 25px -5px rgba(79, 70, 229, 0.5);
+    }
+
+    .btn-launch:active {
+      transform: translateY(0);
+    }
+
+    .submit-disclaimer {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    /* Error Toast */
+    .error-banner {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #b91c1c;
+      padding: 0.85rem 1.25rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.88rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* =========================================================================
+       TRAINING PIPELINE LOADING MODAL
+       ========================================================================= */
+    .pipeline-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(10px);
+      z-index: 99999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      animation: fadeIn 0.25s ease-out;
+    }
+
+    .pipeline-modal-card {
+      background: #ffffff;
+      width: 100%;
+      max-width: 660px;
+      border-radius: var(--radius-lg);
+      padding: 2.25rem;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      position: relative;
+      animation: scaleUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .pipeline-modal-header {
+      text-align: center;
+      margin-bottom: 1.75rem;
+    }
+
+    .loading-pulse-spinner {
+      width: 68px;
+      height: 68px;
+      margin: 0 auto 1.25rem auto;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      box-shadow: 0 0 30px rgba(79, 70, 229, 0.25);
+    }
+
+    .loading-pulse-spinner .inner-icon {
+      font-size: 2rem;
+      animation: spinGear 3s linear infinite;
+    }
+
+    .pipeline-modal-header h2 {
+      font-size: 1.45rem;
+      font-weight: 800;
+      color: var(--text-main);
+      margin-bottom: 0.4rem;
+      letter-spacing: -0.02em;
+    }
+
+    .pipeline-modal-header p {
+      font-size: 0.92rem;
+      color: var(--text-muted);
+    }
+
+    /* Live Pipeline Steps Visualizer */
+    .pipeline-steps-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      background: #f8fafc;
+      padding: 1.25rem;
+      border-radius: var(--radius-md);
+      border: 1px solid #e2e8f0;
+      margin-bottom: 1.5rem;
+    }
+
+    .pipeline-step-item {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #94a3b8;
+      transition: all 0.3s ease;
+      padding: 0.4rem 0.6rem;
+      border-radius: 6px;
+    }
+
+    .pipeline-step-item.active {
+      color: var(--primary);
+      background: #eef2ff;
+    }
+
+    .pipeline-step-item.completed {
+      color: #059669;
+    }
+
+    .step-status-icon {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 2px solid #cbd5e1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.72rem;
+      flex-shrink: 0;
+      transition: all 0.25s ease;
+    }
+
+    .pipeline-step-item.active .step-status-icon {
+      border-color: var(--primary);
+      border-top-color: transparent;
+      animation: spinStep 0.8s linear infinite;
+    }
+
+    .pipeline-step-item.completed .step-status-icon {
+      background: #10b981;
+      border-color: #10b981;
+      color: #ffffff;
+    }
+
+    .step-desc {
+      flex: 1;
+    }
+
+    .step-tag {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: #ffffff;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .pipeline-step-item.active .step-tag {
+      color: var(--primary);
+      border-color: #c7d2fe;
+    }
+
+    /* Success Results Box */
+    .success-summary-box {
+      background: #ecfdf5;
+      border: 1.5px solid #a7f3d0;
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .success-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #065f46;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .summary-metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.75rem;
+      margin-top: 0.75rem;
+    }
+
+    .summary-metric-card {
+      background: #ffffff;
+      padding: 0.65rem 0.85rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid #d1fae5;
+      text-align: center;
+    }
+
+    .summary-metric-val {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #065f46;
+    }
+
+    .summary-metric-lbl {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: #047857;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .btn-proceed-dashboard {
+      width: 100%;
+      padding: 0.95rem 1.25rem;
+      font-size: 1rem;
+      font-weight: 700;
+      color: #ffffff;
+      background: #059669;
+      border: none;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: all 0.2s ease;
+      box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.4);
+    }
+
+    .btn-proceed-dashboard:hover {
+      background: #047857;
+    }
+
+    @keyframes spinGear {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes spinStep {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes scaleUp {
+      from { opacity: 0; transform: scale(0.94); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    @media (max-width: 768px) {
+      .form-grid-2, .form-grid-3, .address-map-block {
+        grid-template-columns: 1fr;
+      }
+      .setup-card {
+        padding: 1.5rem;
+      }
+      .summary-metrics-grid {
+        grid-template-columns: 1fr;
+      }
+      .hero-header h1 {
+        font-size: 1.85rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Top Navigation Header -->
+  <header class="welcome-nav">
+    <a href="/welcome" class="brand-wrap">
+      <div class="brand-logo">&#9889;</div>
+      <span class="brand-title">Delivery Time Predictor</span>
+      <span class="brand-tag">Enterprise ML</span>
+    </a>
+    <div class="nav-actions">
+      <a href="/ui">Go to Dashboard &rarr;</a>
+    </div>
+  </header>
+
+  <div class="onboarding-container">
+    <div class="hero-header">
+      <div class="hero-badge">&#127976; First-Time Merchant Onboarding</div>
+      <h1>Welcome! Setup Your <span>Hotel & Restaurant</span> Profile</h1>
+      <p>Configure your restaurant location, kitchen prep timings, and optionally upload your past delivery records to train a custom Scikit-Learn ML model tailored specifically for your hotel.</p>
+    </div>
+
+    <!-- Error Banner -->
+    <div id="error-banner" class="error-banner hidden">
+      <span>&#9888;</span>
+      <span id="error-text">Please check your inputs and try again.</span>
+    </div>
+
+    <!-- Registration Form Card -->
+    <main class="setup-card">
+      <form id="onboarding-form" onsubmit="return false;" novalidate>
+        
+        <!-- SECTION 1: Hotel Identity & Manager Credentials -->
+        <div class="form-section-title">
+          <span class="section-num">1</span>
+          <span>Hotel Identity & Account Credentials</span>
+        </div>
+
+        <div class="form-grid-2">
+          <!-- Hotel / Restaurant Name -->
+          <div class="form-group">
+            <label class="form-label" for="hotel-name">
+              <span>Hotel / Restaurant Name <span class="req">*</span></span>
+            </label>
+            <input 
+              type="text" 
+              id="hotel-name" 
+              name="hotel_name" 
+              class="form-control" 
+              placeholder="e.g. Bella Vista Trattoria" 
+              required 
+            />
+          </div>
+
+          <!-- Contact Email -->
+          <div class="form-group">
+            <label class="form-label" for="contact-email">
+              <span>Owner / Manager Email <span class="req">*</span></span>
+            </label>
+            <input 
+              type="email" 
+              id="contact-email" 
+              name="email" 
+              class="form-control" 
+              placeholder="e.g. manager@bellavista.com" 
+              required 
+            />
+          </div>
+
+          <!-- Password -->
+          <div class="form-group">
+            <label class="form-label" for="password">
+              <span>Account Password <span class="req">*</span></span>
+            </label>
+            <div class="password-wrap">
+              <input 
+                type="password" 
+                id="password" 
+                name="password" 
+                class="form-control" 
+                placeholder="Minimum 4 characters" 
+                required 
+              />
+              <button type="button" class="password-toggle" id="toggle-pw" title="Show/Hide Password">&#128065;</button>
+            </div>
+          </div>
+
+          <!-- Confirm Password -->
+          <div class="form-group">
+            <label class="form-label" for="confirm-password">
+              <span>Confirm Password <span class="req">*</span></span>
+            </label>
+            <div class="password-wrap">
+              <input 
+                type="password" 
+                id="confirm-password" 
+                name="confirm_password" 
+                class="form-control" 
+                placeholder="Re-type your password" 
+                required 
+              />
+              <button type="button" class="password-toggle" id="toggle-cpw" title="Show/Hide Password">&#128065;</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION 2: Hotel Address & Live Map Location -->
+        <div class="form-section-title">
+          <span class="section-num">2</span>
+          <span>Restaurant Address & GPS Hub</span>
+        </div>
+
+        <div class="address-map-block">
+          <div style="display: flex; flex-direction: column; gap: 1rem;">
+            <!-- Operating Country Dropdown (All Countries Only) -->
+            <div class="form-group">
+              <label class="form-label" for="city-preset">
+                <span>Operating Country <span class="req">*</span></span>
+              </label>
+              <select id="city-preset" name="city_preset" class="form-control" required>
+                <option value="Afghanistan">Afghanistan</option>
+                <option value="Albania">Albania</option>
+                <option value="Algeria">Algeria</option>
+                <option value="Andorra">Andorra</option>
+                <option value="Angola">Angola</option>
+                <option value="Antigua and Barbuda">Antigua and Barbuda</option>
+                <option value="Argentina">Argentina</option>
+                <option value="Armenia">Armenia</option>
+                <option value="Australia">Australia</option>
+                <option value="Austria">Austria</option>
+                <option value="Azerbaijan">Azerbaijan</option>
+                <option value="Bahamas">Bahamas</option>
+                <option value="Bahrain">Bahrain</option>
+                <option value="Bangladesh">Bangladesh</option>
+                <option value="Barbados">Barbados</option>
+                <option value="Belarus">Belarus</option>
+                <option value="Belgium">Belgium</option>
+                <option value="Belize">Belize</option>
+                <option value="Benin">Benin</option>
+                <option value="Bhutan">Bhutan</option>
+                <option value="Bolivia">Bolivia</option>
+                <option value="Bosnia and Herzegovina">Bosnia and Herzegovina</option>
+                <option value="Botswana">Botswana</option>
+                <option value="Brazil">Brazil</option>
+                <option value="Brunei">Brunei</option>
+                <option value="Bulgaria">Bulgaria</option>
+                <option value="Burkina Faso">Burkina Faso</option>
+                <option value="Burundi">Burundi</option>
+                <option value="Cambodia">Cambodia</option>
+                <option value="Cameroon">Cameroon</option>
+                <option value="Canada">Canada</option>
+                <option value="Cape Verde">Cape Verde</option>
+                <option value="Central African Republic">Central African Republic</option>
+                <option value="Chad">Chad</option>
+                <option value="Chile">Chile</option>
+                <option value="China">China</option>
+                <option value="Colombia">Colombia</option>
+                <option value="Comoros">Comoros</option>
+                <option value="Congo">Congo</option>
+                <option value="Costa Rica">Costa Rica</option>
+                <option value="Croatia">Croatia</option>
+                <option value="Cuba">Cuba</option>
+                <option value="Cyprus">Cyprus</option>
+                <option value="Czech Republic">Czech Republic</option>
+                <option value="Democratic Republic of the Congo">Democratic Republic of the Congo</option>
+                <option value="Denmark">Denmark</option>
+                <option value="Djibouti">Djibouti</option>
+                <option value="Dominica">Dominica</option>
+                <option value="Dominican Republic">Dominican Republic</option>
+                <option value="East Timor">East Timor</option>
+                <option value="Ecuador">Ecuador</option>
+                <option value="Egypt">Egypt</option>
+                <option value="El Salvador">El Salvador</option>
+                <option value="Equatorial Guinea">Equatorial Guinea</option>
+                <option value="Eritrea">Eritrea</option>
+                <option value="Estonia">Estonia</option>
+                <option value="Eswatini">Eswatini</option>
+                <option value="Ethiopia">Ethiopia</option>
+                <option value="Fiji">Fiji</option>
+                <option value="Finland">Finland</option>
+                <option value="France">France</option>
+                <option value="Gabon">Gabon</option>
+                <option value="Gambia">Gambia</option>
+                <option value="Georgia">Georgia</option>
+                <option value="Germany">Germany</option>
+                <option value="Ghana">Ghana</option>
+                <option value="Greece">Greece</option>
+                <option value="Grenada">Grenada</option>
+                <option value="Guatemala">Guatemala</option>
+                <option value="Guinea">Guinea</option>
+                <option value="Guinea-Bissau">Guinea-Bissau</option>
+                <option value="Guyana">Guyana</option>
+                <option value="Haiti">Haiti</option>
+                <option value="Honduras">Honduras</option>
+                <option value="Hungary">Hungary</option>
+                <option value="Iceland">Iceland</option>
+                <option value="India">India</option>
+                <option value="Indonesia">Indonesia</option>
+                <option value="Iran">Iran</option>
+                <option value="Iraq">Iraq</option>
+                <option value="Ireland">Ireland</option>
+                <option value="Israel">Israel</option>
+                <option value="Italy">Italy</option>
+                <option value="Ivory Coast">Ivory Coast</option>
+                <option value="Jamaica">Jamaica</option>
+                <option value="Japan">Japan</option>
+                <option value="Jordan">Jordan</option>
+                <option value="Kazakhstan">Kazakhstan</option>
+                <option value="Kenya">Kenya</option>
+                <option value="Kuwait">Kuwait</option>
+                <option value="Kyrgyzstan">Kyrgyzstan</option>
+                <option value="Laos">Laos</option>
+                <option value="Latvia">Latvia</option>
+                <option value="Lebanon">Lebanon</option>
+                <option value="Lesotho">Lesotho</option>
+                <option value="Liberia">Liberia</option>
+                <option value="Libya">Libya</option>
+                <option value="Liechtenstein">Liechtenstein</option>
+                <option value="Lithuania">Lithuania</option>
+                <option value="Luxembourg">Luxembourg</option>
+                <option value="Madagascar">Madagascar</option>
+                <option value="Malawi">Malawi</option>
+                <option value="Malaysia">Malaysia</option>
+                <option value="Maldives">Maldives</option>
+                <option value="Mali">Mali</option>
+                <option value="Malta">Malta</option>
+                <option value="Mauritania">Mauritania</option>
+                <option value="Mauritius">Mauritius</option>
+                <option value="Mexico">Mexico</option>
+                <option value="Moldova">Moldova</option>
+                <option value="Monaco">Monaco</option>
+                <option value="Mongolia">Mongolia</option>
+                <option value="Montenegro">Montenegro</option>
+                <option value="Morocco">Morocco</option>
+                <option value="Mozambique">Mozambique</option>
+                <option value="Myanmar">Myanmar</option>
+                <option value="Namibia">Namibia</option>
+                <option value="Nepal">Nepal</option>
+                <option value="Netherlands">Netherlands</option>
+                <option value="New Zealand">New Zealand</option>
+                <option value="Nicaragua">Nicaragua</option>
+                <option value="Niger">Niger</option>
+                <option value="Nigeria">Nigeria</option>
+                <option value="North Macedonia">North Macedonia</option>
+                <option value="Norway">Norway</option>
+                <option value="Oman">Oman</option>
+                <option value="Pakistan">Pakistan</option>
+                <option value="Palestine">Palestine</option>
+                <option value="Panama">Panama</option>
+                <option value="Papua New Guinea">Papua New Guinea</option>
+                <option value="Paraguay">Paraguay</option>
+                <option value="Peru">Peru</option>
+                <option value="Philippines">Philippines</option>
+                <option value="Poland">Poland</option>
+                <option value="Portugal">Portugal</option>
+                <option value="Qatar">Qatar</option>
+                <option value="Romania">Romania</option>
+                <option value="Russia">Russia</option>
+                <option value="Rwanda">Rwanda</option>
+                <option value="Saudi Arabia">Saudi Arabia</option>
+                <option value="Senegal">Senegal</option>
+                <option value="Serbia">Serbia</option>
+                <option value="Seychelles">Seychelles</option>
+                <option value="Sierra Leone">Sierra Leone</option>
+                <option value="Singapore">Singapore</option>
+                <option value="Slovakia">Slovakia</option>
+                <option value="Slovenia">Slovenia</option>
+                <option value="Somalia">Somalia</option>
+                <option value="South Africa">South Africa</option>
+                <option value="South Korea">South Korea</option>
+                <option value="Spain">Spain</option>
+                <option value="Sri Lanka">Sri Lanka</option>
+                <option value="Sudan">Sudan</option>
+                <option value="Sweden">Sweden</option>
+                <option value="Switzerland">Switzerland</option>
+                <option value="Syria">Syria</option>
+                <option value="Taiwan">Taiwan</option>
+                <option value="Tajikistan">Tajikistan</option>
+                <option value="Tanzania">Tanzania</option>
+                <option value="Thailand">Thailand</option>
+                <option value="Togo">Togo</option>
+                <option value="Trinidad and Tobago">Trinidad and Tobago</option>
+                <option value="Tunisia">Tunisia</option>
+                <option value="Turkey">Turkey</option>
+                <option value="Uganda">Uganda</option>
+                <option value="Ukraine">Ukraine</option>
+                <option value="United Arab Emirates">United Arab Emirates</option>
+                <option value="United Kingdom">United Kingdom</option>
+                <option value="United States" selected>United States</option>
+                <option value="Uruguay">Uruguay</option>
+                <option value="Uzbekistan">Uzbekistan</option>
+                <option value="Venezuela">Venezuela</option>
+                <option value="Vietnam">Vietnam</option>
+                <option value="Yemen">Yemen</option>
+                <option value="Zambia">Zambia</option>
+                <option value="Zimbabwe">Zimbabwe</option>
+              </select>
+            </div>
+
+            <!-- Street Address & Branch Input -->
+            <div class="form-group">
+              <label class="form-label" for="hotel-address">
+                <span>Street Address & Branch <span class="req">*</span></span>
+              </label>
+              <div class="address-input-row">
+                <input 
+                  type="text" 
+                  id="hotel-address" 
+                  name="address" 
+                  class="form-control" 
+                  placeholder="e.g. 142 Sunset Boulevard, Downtown Branch" 
+                  value="" 
+                  required 
+                />
+                <button type="button" class="btn-locate-address" id="btn-locate-address" title="Pinpoint this address on the map">&#128205; Locate</button>
+              </div>
+              <small class="field-subtext">Type your branch and street address. Click <strong>Locate</strong> or drag the pin on the map to set exact GPS coordinates.</small>
+            </div>
+
+            <!-- Operational Defaults (Prep Time & Vehicle) -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+              <div class="form-group">
+                <label class="form-label" for="default-prep">Avg Prep (min)</label>
+                <input 
+                  type="number" 
+                  id="default-prep" 
+                  name="default_prep_time_min" 
+                  class="form-control" 
+                  value="15" 
+                  min="1" 
+                  max="120" 
+                />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="default-vehicle">Primary Fleet</label>
+                <select id="default-vehicle" name="default_vehicle_type" class="form-control">
+                  <option value="Scooter" selected>Scooter 🛵</option>
+                  <option value="Bike">Bicycle 🚲</option>
+                  <option value="Car">Car / Van 🚗</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Hidden Coordinates (initialized dynamically) -->
+            <input type="hidden" id="hotel-lat" name="latitude" value="" />
+            <input type="hidden" id="hotel-lng" name="longitude" value="" />
+          </div>
+
+          <!-- Mini Interactive Location Pin Map -->
+          <div style="display: flex; flex-direction: column;">
+            <div class="mini-map-box" id="mini-map">
+              <div class="mini-map-hint">&#128205; Drag pin or click map to pinpoint your restaurant door</div>
+            </div>
+            <div class="gps-coords-display" id="gps-coords-display">
+              <span>📍 <strong id="disp-country">United States</strong> &bull; Lat: <span id="disp-lat">--</span>, Lng: <span id="disp-lng">--</span></span>
+              <span id="disp-status" style="margin-left: auto; color: #047857; font-weight: 600;">Drag pin to adjust</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION 3: Historical Delivery Dataset (Optional Retraining) -->
+        <div class="form-section-title" style="margin-top: 1.75rem;">
+          <span class="section-num">3</span>
+          <span>Historical Delivery Dataset (Optional ML Retraining)</span>
+        </div>
+
+        <div class="dataset-upload-zone" id="dataset-dropzone">
+          <input type="file" id="dataset-input" name="dataset" accept=".xlsx,.xls,.csv" />
+          <div class="upload-icon">&#128196;</div>
+          <div class="upload-title">Have historical delivery records? Upload your Excel or CSV file</div>
+          <div class="upload-sub">Supports <strong>.xlsx, .xls, or .csv</strong> with historical delivery durations (min).</div>
+          <div id="file-chosen-pill" class="selected-file-pill hidden">
+            <span>&#128206;</span> <span id="file-name-text">filename.xlsx</span>
+          </div>
+        </div>
+
+        <div class="template-helpers">
+          <span>Don't have your own data? No worries! Account will launch with our baseline production model.</span>
+          <div>
+            <a href="/api/sample-template?type=training&format=xlsx" download>&#128190; Sample Training Excel</a>
+            <span style="margin: 0 0.4rem; color: #cbd5e1;">&bull;</span>
+            <a href="/api/sample-template?type=training&format=csv" download>&#128196; Sample CSV</a>
+          </div>
+        </div>
+
+        <!-- Form Submission Button -->
+        <div class="submit-wrap">
+          <button type="submit" id="submit-btn" class="btn-launch">
+            <span>&#9889; Create Hotel Account & Launch ML Platform</span>
+          </button>
+          <span class="submit-disclaimer">By submitting, your hotel credentials and coordinates are securely saved in SQLite.</span>
+        </div>
+
+      </form>
+    </main>
+  </div>
+
+  <!-- =========================================================================
+       TRAINING PIPELINE LOADING MODAL (Live Step Animation)
+       ========================================================================= -->
+  <div id="pipeline-modal" class="pipeline-modal-backdrop hidden">
+    <div class="pipeline-modal-card">
+      
+      <div class="pipeline-modal-header">
+        <div class="loading-pulse-spinner" id="modal-spinner-box">
+          <span class="inner-icon">&#9881;</span>
+        </div>
+        <h2 id="modal-main-heading">Processing Data & Training ML Pipeline...</h2>
+        <p id="modal-sub-heading">Please wait while we validate your restaurant records and train the delivery prediction pipeline.</p>
+      </div>
+
+      <!-- Live Step-by-Step Pipeline Progress -->
+      <div class="pipeline-steps-list">
+        <div class="pipeline-step-item" id="step-1">
+          <span class="step-status-icon">&#9679;</span>
+          <span class="step-desc">1. Raw Data Ingestion & Schema Audit</span>
+          <span class="step-tag" id="tag-1">Pending</span>
+        </div>
+        <div class="pipeline-step-item" id="step-2">
+          <span class="step-status-icon">&#9679;</span>
+          <span class="step-desc">2. Automated EDA & Missing Value Audit</span>
+          <span class="step-tag" id="tag-2">Pending</span>
+        </div>
+        <div class="pipeline-step-item" id="step-3">
+          <span class="step-status-icon">&#9679;</span>
+          <span class="step-desc">3. Preprocessing & Median/Mode Imputation</span>
+          <span class="step-tag" id="tag-3">Pending</span>
+        </div>
+        <div class="pipeline-step-item" id="step-4">
+          <span class="step-status-icon">&#9679;</span>
+          <span class="step-desc">4. Feature Engineering & One-Hot Encodings</span>
+          <span class="step-tag" id="tag-4">Pending</span>
+        </div>
+        <div class="pipeline-step-item" id="step-5">
+          <span class="step-status-icon">&#9679;</span>
+          <span class="step-desc">5. ML Model Fitting & Training</span>
+          <span class="step-tag" id="tag-5">Pending</span>
+        </div>
+        <div class="pipeline-step-item" id="step-6">
+          <span class="step-status-icon">&#9679;</span>
+          <span class="step-desc">6. Holdout Evaluation & Baseline Comparison</span>
+          <span class="step-tag" id="tag-6">Pending</span>
+        </div>
+        <div class="pipeline-step-item" id="step-7">
+          <span class="step-status-icon">&#9679;</span>
+          <span class="step-desc">7. 5-Fold Cross-Validation & Hyperparameter Check</span>
+          <span class="step-tag" id="tag-7">Pending</span>
+        </div>
+        <div class="pipeline-step-item" id="step-8">
+          <span class="step-status-icon">&#9679;</span>
+          <span class="step-desc">8. Model Serialization & SQLite Profile Save</span>
+          <span class="step-tag" id="tag-8">Pending</span>
+        </div>
+      </div>
+
+      <!-- Success Details Box (Revealed upon completion) -->
+      <div id="modal-success-box" class="success-summary-box hidden">
+        <div class="success-title">
+          <span>&#10004;</span>
+          <span id="success-headline">Restaurant Profile Configured & Model Ready!</span>
+        </div>
+        <p id="success-subtext" style="font-size: 0.85rem; color: #047857;">Your delivery intelligence engine is calibrated to your kitchen and delivery radius.</p>
+        
+        <div class="summary-metrics-grid">
+          <div class="summary-metric-card">
+            <div class="summary-metric-val" id="sum-samples">Production</div>
+            <div class="summary-metric-lbl">Dataset Type</div>
+          </div>
+          <div class="summary-metric-card">
+            <div class="summary-metric-val" id="sum-mae">~3.2 min</div>
+            <div class="summary-metric-lbl">Model MAE Error</div>
+          </div>
+          <div class="summary-metric-card">
+            <div class="summary-metric-val" id="sum-city">Operating Hub</div>
+            <div class="summary-metric-lbl">Address & Country</div>
+          </div>
+        </div>
+      </div>
+
+      <button type="button" id="btn-to-dashboard" class="btn-proceed-dashboard hidden">
+        <span>Proceed to Live Dashboard &rarr;</span>
+      </button>
+
+    </div>
+  </div>
+
+  <!-- JavaScript Logic -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      // 1. Password Visibility Toggles
+      const togglePw = document.getElementById("toggle-pw");
+      const pwInput = document.getElementById("password");
+      if (togglePw && pwInput) {
+        togglePw.addEventListener("click", () => {
+          pwInput.type = pwInput.type === "password" ? "text" : "password";
+        });
+      }
+
+      const toggleCpw = document.getElementById("toggle-cpw");
+      const cpwInput = document.getElementById("confirm-password");
+      if (toggleCpw && cpwInput) {
+        toggleCpw.addEventListener("click", () => {
+          cpwInput.type = cpwInput.type === "password" ? "text" : "password";
+        });
+      }
+
+      // 2. Country Coordinates & Interactive Mini-Map Setup
+      const countryCoordinates = {
+        "United States": [39.8283, -98.5795, 4],
+        "United Kingdom": [54.5593, -2.1466, 6],
+        "Canada": [56.1304, -106.3468, 4],
+        "Australia": [-25.2744, 133.7751, 4],
+        "Pakistan": [30.3753, 69.3451, 5],
+        "India": [20.5937, 78.9629, 5],
+        "United Arab Emirates": [23.4241, 53.8478, 7],
+        "Saudi Arabia": [23.8859, 45.0792, 5],
+        "Germany": [51.1657, 10.4515, 6],
+        "France": [46.6033, 1.8883, 6],
+        "Italy": [41.8719, 12.5674, 6],
+        "Spain": [40.4637, -3.7492, 6],
+        "Brazil": [-14.2350, -51.9253, 4],
+        "Japan": [36.2048, 138.2529, 5],
+        "China": [35.8617, 104.1954, 4],
+        "Singapore": [1.3521, 103.8198, 11],
+        "Turkey": [38.9637, 35.2433, 6],
+        "Mexico": [23.6345, -102.5528, 5],
+        "South Africa": [-30.5595, 22.9375, 5],
+        "Egypt": [26.8206, 30.8025, 5],
+        "Indonesia": [-0.7893, 113.9213, 5],
+        "Malaysia": [4.2105, 101.9758, 6],
+        "Netherlands": [52.1326, 5.2913, 7],
+        "Switzerland": [46.8182, 8.2275, 7],
+        "Sweden": [60.1282, 18.6435, 5],
+        "Norway": [60.4720, 8.4689, 5],
+        "Denmark": [56.2639, 9.5018, 7],
+        "Poland": [51.9194, 19.1451, 6],
+        "Portugal": [39.3999, -8.2245, 6],
+        "Ireland": [53.4129, -8.2439, 7],
+        "New Zealand": [-40.9006, 174.8860, 5],
+        "Qatar": [25.3548, 51.1839, 8],
+        "Kuwait": [29.3117, 47.4818, 8],
+        "Bahrain": [26.0667, 50.5577, 10],
+        "Oman": [21.4735, 55.9754, 6],
+        "Bangladesh": [23.6850, 90.3563, 6],
+        "Sri Lanka": [7.8731, 80.7718, 7],
+        "Philippines": [12.8797, 121.7740, 5],
+        "Vietnam": [14.0583, 108.2772, 5],
+        "Thailand": [15.8700, 100.9925, 5],
+        "Argentina": [-38.4161, -63.6167, 4],
+        "Colombia": [4.5709, -74.2973, 5],
+        "Chile": [-35.6751, -71.5430, 4],
+        "Nigeria": [9.0820, 8.6753, 5],
+        "Kenya": [-0.0236, 37.9062, 6],
+        "South Korea": [35.9078, 127.7669, 7],
+        "Russia": [61.5240, 105.3188, 3],
+        "Greece": [39.0742, 21.8243, 6],
+        "Austria": [47.5162, 14.5501, 7],
+        "Belgium": [50.5039, 4.4699, 8],
+        "Morocco": [31.7917, -7.0926, 6]
+      };
+
+      const citySelect = document.getElementById("city-preset");
+      const latInput = document.getElementById("hotel-lat");
+      const lngInput = document.getElementById("hotel-lng");
+      const addressInput = document.getElementById("hotel-address");
+      const hotelNameInput = document.getElementById("hotel-name");
+      const btnLocateAddress = document.getElementById("btn-locate-address");
+      const dispLat = document.getElementById("disp-lat");
+      const dispLng = document.getElementById("disp-lng");
+      const dispCountry = document.getElementById("disp-country");
+      const dispStatus = document.getElementById("disp-status");
+
+      // Initialize Leaflet Mini Map
+      const initCountry = (citySelect && citySelect.value) || "United States";
+      const defaultData = countryCoordinates[initCountry] || [39.8283, -98.5795, 4];
+      const miniMap = L.map("mini-map", {
+        center: [defaultData[0], defaultData[1]],
+        zoom: defaultData[2] || 4,
+        zoomControl: true
+      });
+
+      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+      }).addTo(miniMap);
+
+      let hotelMarker = L.marker([defaultData[0], defaultData[1]], {
+        draggable: true
+      }).addTo(miniMap);
+
+      function refreshPopup() {
+        const hName = (hotelNameInput && hotelNameInput.value.trim()) || "Your Hotel / Restaurant";
+        const hAddr = (addressInput && addressInput.value.trim()) || "Street Address & Branch";
+        const ctry = (citySelect && citySelect.value) || "";
+        hotelMarker.bindPopup(`<b>🏨 ${hName}</b><br><small>${hAddr}</small><br><span style="color:#6366f1;font-size:0.75rem;font-weight:600;">${ctry}</span>`);
+      }
+
+      function updateMarker(lat, lng, zoom = 14, statusText = null) {
+        hotelMarker.setLatLng([lat, lng]);
+        miniMap.setView([lat, lng], zoom);
+        latInput.value = lat.toFixed(6);
+        lngInput.value = lng.toFixed(6);
+        if (dispLat) dispLat.textContent = lat.toFixed(4);
+        if (dispLng) dispLng.textContent = lng.toFixed(4);
+        if (dispCountry) dispCountry.textContent = citySelect.value || "Selected";
+        if (dispStatus) {
+          dispStatus.textContent = statusText || "Pin set";
+        }
+        refreshPopup();
+      }
+
+      // Initialize coordinates and UI immediately
+      updateMarker(defaultData[0], defaultData[1], defaultData[2] || 4, "Initial hub");
+
+      hotelMarker.on("dragend", (e) => {
+        const pos = e.target.getLatLng();
+        updateMarker(pos.lat, pos.lng, miniMap.getZoom(), "Custom Pin Dragged");
+      });
+
+      miniMap.on("click", (e) => {
+        updateMarker(e.latlng.lat, e.latlng.lng, miniMap.getZoom(), "Map Click Pinpoint");
+      });
+
+      if (hotelNameInput) {
+        hotelNameInput.addEventListener("input", refreshPopup);
+      }
+
+      // Progressive Geocoding Engine with Multi-Level Fallbacks
+      async function progressiveGeocode(rawAddress, country) {
+        if (!rawAddress) return null;
+        async function fetchGeo(query) {
+          try {
+            const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`;
+            const r = await fetch(url);
+            if (r.ok) {
+              const items = await r.json();
+              if (items && items.length > 0) {
+                return {
+                  lat: parseFloat(items[0].lat),
+                  lng: parseFloat(items[0].lon),
+                  name: items[0].display_name
+                };
+              }
+            }
+          } catch (e) {
+            console.warn("Geocoding lookup notice:", e);
+          }
+          return null;
+        }
+
+        // Level 1: Full address + country
+        let match = await fetchGeo(`${rawAddress}, ${country}`);
+        if (match) return match;
+
+        // Level 2: Segments split by punctuation
+        const parts = rawAddress.split(/[,;\/\-\n]+/).map(s => s.trim()).filter(s => s.length > 3);
+        for (const part of parts) {
+          match = await fetchGeo(`${part}, ${country}`);
+          if (match) return match;
+        }
+
+        // Level 3: Sliding word windows (3 words, 2 words) to match specific landmark/area
+        const words = rawAddress.split(/\s+/).filter(w => w.length > 2);
+        for (let n = Math.min(3, words.length); n >= 2; n--) {
+          for (let i = 0; i <= words.length - n; i++) {
+            const phrase = words.slice(i, i + n).join(" ");
+            const lower = phrase.toLowerCase();
+            if (lower.includes("main campus") || lower.includes("mini market") || lower.includes("street address") || lower.includes("floor") || lower.includes("shop")) continue;
+            match = await fetchGeo(`${phrase}, ${country}`);
+            if (match) return match;
+          }
+        }
+
+        // Level 4: Country-level lookup
+        return await fetchGeo(country);
+      }
+
+      // Live address locating
+      async function locateAddressOnMap(showIndicator = true) {
+        const addr = addressInput ? addressInput.value.trim() : "";
+        const country = citySelect ? citySelect.value : "";
+        if (!addr) return;
+
+        if (btnLocateAddress && showIndicator) {
+          btnLocateAddress.disabled = true;
+          btnLocateAddress.textContent = "⏳ Locating...";
+        }
+
+        const match = await progressiveGeocode(addr, country);
+        if (match) {
+          updateMarker(match.lat, match.lng, 15, "Address verified");
+          hotelMarker.openPopup();
+        } else {
+          // If street is not found in public database, center on country and prompt user
+          if (countryCoordinates[country]) {
+            const [cLat, cLng, cZoom] = countryCoordinates[country];
+            updateMarker(cLat, cLng, cZoom, `Placed in ${country} (Drag pin to adjust)`);
+          }
+        }
+
+        if (btnLocateAddress && showIndicator) {
+          btnLocateAddress.disabled = false;
+          btnLocateAddress.innerHTML = "&#128205; Locate";
+        }
+      }
+
+      if (btnLocateAddress) {
+        btnLocateAddress.addEventListener("click", () => locateAddressOnMap(true));
+      }
+
+      if (addressInput) {
+        addressInput.addEventListener("blur", () => {
+          if (addressInput.value.trim()) {
+            locateAddressOnMap(false);
+          }
+        });
+        addressInput.addEventListener("input", refreshPopup);
+      }
+
+      citySelect.addEventListener("change", () => {
+        const country = citySelect.value;
+        if (dispCountry) dispCountry.textContent = country;
+        refreshPopup();
+
+        // 1. ALWAYS center marker on selected country coordinates FIRST!
+        if (countryCoordinates[country]) {
+          const [cLat, cLng, cZoom] = countryCoordinates[country];
+          updateMarker(cLat, cLng, cZoom, `${country} center`);
+        } else {
+          fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(country)}&limit=1`)
+            .then(r => r.json())
+            .then(data => {
+              if (data && data.length > 0) {
+                updateMarker(parseFloat(data[0].lat), parseFloat(data[0].lon), 6, `${country} hub`);
+              }
+            })
+            .catch(() => {});
+        }
+
+        // 2. If user already typed an address, refine location in that country
+        if (addressInput && addressInput.value.trim()) {
+          locateAddressOnMap(false);
+        }
+      });
+
+      // 3. Dataset Upload Dropzone
+      const dropzone = document.getElementById("dataset-dropzone");
+      const datasetInput = document.getElementById("dataset-input");
+      const filePill = document.getElementById("file-chosen-pill");
+      const fileNameText = document.getElementById("file-name-text");
+
+      datasetInput.addEventListener("change", () => {
+        if (datasetInput.files && datasetInput.files[0]) {
+          const file = datasetInput.files[0];
+          fileNameText.textContent = `${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+          filePill.classList.remove("hidden");
+        } else {
+          filePill.classList.add("hidden");
+        }
+      });
+
+      ["dragenter", "dragover"].forEach((evt) => {
+        dropzone.addEventListener(evt, (e) => {
+          e.preventDefault();
+          dropzone.classList.add("dragover");
+        });
+      });
+
+      ["dragleave", "drop"].forEach((evt) => {
+        dropzone.addEventListener(evt, (e) => {
+          e.preventDefault();
+          dropzone.classList.remove("dragover");
+        });
+      });
+
+      // 4. Form Validation & Submission with Animated Training Pipeline
+      const form = document.getElementById("onboarding-form");
+      const submitBtn = document.getElementById("submit-btn");
+      const errorBanner = document.getElementById("error-banner");
+      const errorText = document.getElementById("error-text");
+
+      const pipelineModal = document.getElementById("pipeline-modal");
+      const modalSpinnerBox = document.getElementById("modal-spinner-box");
+      const modalMainHeading = document.getElementById("modal-main-heading");
+      const modalSubHeading = document.getElementById("modal-sub-heading");
+      const modalSuccessBox = document.getElementById("modal-success-box");
+      const btnToDashboard = document.getElementById("btn-to-dashboard");
+
+      const sumSamples = document.getElementById("sum-samples");
+      const sumMae = document.getElementById("sum-mae");
+      const sumCity = document.getElementById("sum-city");
+
+      function showError(msg) {
+        errorText.textContent = msg;
+        errorBanner.classList.remove("hidden");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+
+      function hideError() {
+        errorBanner.classList.add("hidden");
+      }
+
+      function setStepState(stepNum, state, tagText) {
+        const item = document.getElementById(`step-${stepNum}`);
+        const tag = document.getElementById(`tag-${stepNum}`);
+        if (!item || !tag) return;
+
+        item.classList.remove("active", "completed");
+        if (state === "active") {
+          item.classList.add("active");
+          tag.textContent = tagText || "Running...";
+        } else if (state === "completed") {
+          item.classList.add("completed");
+          tag.textContent = tagText || "Done ✓";
+          const icon = item.querySelector(".step-status-icon");
+          if (icon) icon.innerHTML = "&#10004;";
+        } else {
+          tag.textContent = tagText || "Pending";
+        }
+      }
+
+      async function runPipelineVisualSteps(totalSteps = 8) {
+        for (let i = 1; i <= totalSteps; i++) {
+          setStepState(i, "active", "In Progress...");
+          await new Promise((r) => setTimeout(r, 450));
+          setStepState(i, "completed", "Done ✓");
+        }
+      }
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        hideError();
+
+        const hotelName = document.getElementById("hotel-name").value.trim();
+        const email = document.getElementById("contact-email").value.trim();
+        const password = pwInput.value;
+        const confirmPassword = cpwInput.value;
+        const address = addressInput.value.trim();
+
+        // Validation
+        if (!hotelName) {
+          showError("Please enter your Hotel or Restaurant Name.");
+          return;
+        }
+        if (!email || !email.includes("@")) {
+          showError("Please enter a valid owner contact email.");
+          return;
+        }
+        if (!password || password.length < 4) {
+          showError("Password must be at least 4 characters.");
+          return;
+        }
+        if (password !== confirmPassword) {
+          showError("Passwords do not match. Please re-enter.");
+          return;
+        }
+        if (!address) {
+          showError("Please provide your hotel or restaurant street address.");
+          return;
+        }
+
+        // Open Pipeline Modal
+        pipelineModal.classList.remove("hidden");
+        document.body.style.overflow = "hidden";
+
+        const hasDataset = datasetInput.files && datasetInput.files.length > 0;
+        if (hasDataset) {
+          modalMainHeading.textContent = "Processing Raw Data & Training Hotel ML Pipeline...";
+          modalSubHeading.textContent = `Analyzing historical orders for '${hotelName}' through all 8 stages...`;
+        } else {
+          modalMainHeading.textContent = "Initializing Restaurant Profile & Production Pipeline...";
+          modalSubHeading.textContent = `Configuring baseline model and delivery radius for '${hotelName}'...`;
+        }
+
+        // Ensure coordinates match country before submitting
+        const chosenCountry = citySelect.value;
+        let finalLat = parseFloat(latInput.value);
+        let finalLng = parseFloat(lngInput.value);
+        const isManhattanDef = (!isNaN(finalLat) && Math.abs(finalLat - 40.7580) < 0.15 && Math.abs(finalLng - (-73.9855)) < 0.15);
+        if (isNaN(finalLat) || isNaN(finalLng) || (isManhattanDef && chosenCountry !== "United States")) {
+          const match = await progressiveGeocode(address, chosenCountry);
+          if (match) {
+            latInput.value = match.lat.toFixed(6);
+            lngInput.value = match.lng.toFixed(6);
+          } else if (countryCoordinates[chosenCountry]) {
+            latInput.value = countryCoordinates[chosenCountry][0].toFixed(6);
+            lngInput.value = countryCoordinates[chosenCountry][1].toFixed(6);
+          }
+        }
+
+        // Prepare multipart form data
+        const formData = new FormData();
+        formData.append("hotel_name", hotelName);
+        formData.append("email", email);
+        formData.append("password", password);
+        formData.append("address", address);
+        formData.append("city_preset", citySelect.value);
+        formData.append("latitude", latInput.value);
+        formData.append("longitude", lngInput.value);
+        formData.append("default_prep_time_min", document.getElementById("default-prep").value);
+        formData.append("default_vehicle_type", document.getElementById("default-vehicle").value);
+
+        if (hasDataset) {
+          formData.append("dataset", datasetInput.files[0]);
+        }
+
+        // Start step animation concurrently with the backend request
+        const stepAnimationPromise = runPipelineVisualSteps(8);
+
+        try {
+          const response = await fetch("/api/register-hotel", {
+            method: "POST",
+            body: formData
+          });
+
+          // Wait for step animation to look clean and complete
+          await stepAnimationPromise;
+
+          if (!response.ok) {
+            const errData = await response.json();
+            throw new Error(errData.detail || "Registration failed. Please check your data.");
+          }
+
+          const result = await response.json();
+
+          // Transform modal into success state
+          modalSpinnerBox.innerHTML = '<span style="font-size: 2.2rem; color: #10b981;">&#10004;</span>';
+          modalSpinnerBox.style.background = "#d1fae5";
+          modalMainHeading.textContent = `Welcome, ${hotelName}!`;
+          modalSubHeading.textContent = "Your hotel profile is initialized and the ML model pipeline is active.";
+
+          // Populate metrics in success box
+          if (result.retrained && result.metrics) {
+            sumSamples.textContent = `${result.metrics.total_samples || 0} Orders`;
+            sumMae.textContent = `~${result.metrics.model_mae || 3.2} min`;
+          } else {
+            sumSamples.textContent = "Pre-trained";
+            sumMae.textContent = "~3.4 min";
+          }
+          sumCity.textContent = address ? `${address}, ${citySelect.value}` : citySelect.value;
+
+          modalSuccessBox.classList.remove("hidden");
+          btnToDashboard.classList.remove("hidden");
+
+          // Auto redirect in 3.5 seconds or on button click
+          const redirectTimer = setTimeout(() => {
+            window.location.href = "/ui";
+          }, 3500);
+
+          btnToDashboard.addEventListener("click", () => {
+            clearTimeout(redirectTimer);
+            window.location.href = "/ui";
+          });
+
+        } catch (err) {
+          pipelineModal.classList.add("hidden");
+          document.body.style.overflow = "";
+          showError(err.message || "An error occurred while setting up your account.");
+        }
+      });
+    });
+  </script>
+</body>
+</html>

@@ -45,6 +45,9 @@ models/*
 *.zip
 *.parquet
 *.feather
+*.db
+*.sqlite
+*.sqlite3
 # Raw or intermediate cache data (uncomment if data should not be tracked)
 # data/processed/
 # data/interim/
