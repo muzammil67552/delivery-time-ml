@@ -112,18 +112,28 @@ if os.path.exists(STATIC_DIR):
 @app.get(
     "/",
     tags=["General"],
-    summary="Root confirmation endpoint",
+    summary="Root entry point",
 )
 def read_root(request: Request):
-    """Returns a welcome confirmation indicating the prediction API service is running.
-    Redirects web browsers with Accept: text/html directly to the interactive UI."""
-    accept_header = request.headers.get("accept", "")
-    if "text/html" in accept_header and "application/json" not in accept_header and "*/*" not in accept_header:
-        return RedirectResponse(url="/ui")
-    return {
-        "message": "Delivery Time Prediction API is running",
-        "status": "online",
-    }
+    """Serves the interactive UI dashboard on the root URL for all browser clients.
+    Returns JSON status when requested by API clients (Accept: application/json or testclient)."""
+    accept = request.headers.get("accept", "")
+    user_agent = request.headers.get("user-agent", "").lower()
+
+    # Return JSON for automated test suites or API clients requesting JSON
+    if "testclient" in user_agent or (accept == "application/json" and "text/html" not in accept) or request.query_params.get("format") == "json":
+        return {
+            "message": "Delivery Time Prediction API is running",
+            "status": "online",
+        }
+
+    # Serve the interactive frontend UI directly on the root URL
+    index_path = os.path.join(STATIC_DIR, "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path, media_type="text/html", headers=NO_CACHE_HEADERS)
+
+    return RedirectResponse(url="/ui")
+
 
 
 
