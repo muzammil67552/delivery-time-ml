@@ -599,11 +599,16 @@ def register_rider(payload: RiderCreatePayload):
             if not rider_dict.get("current_address"):
                 rider_dict["current_address"] = "Central Dispatch Hub"
 
+    has_custom_gps = (r_lat is not None and r_lng is not None and not (r_lat == 0.0 and r_lng == 0.0))
+    tracking_source = "Native Device GPS Sensor (Hardware-Free)" if has_custom_gps else "Station Hub Fallback"
+
     saved_rider = create_or_update_rider(rider_dict)
     resp = dict(saved_rider)
     resp["status"] = "success"
-    resp["message"] = f"Rider '{saved_rider.get('rider_name')}' registered successfully!"
+    resp["message"] = f"Rider '{saved_rider.get('rider_name')}' registered successfully with {tracking_source}!"
     resp["rider"] = saved_rider
+    resp["tracking_source"] = tracking_source
+    resp["hardware_gps_required"] = False
     return resp
 
 

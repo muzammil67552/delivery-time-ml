@@ -33,6 +33,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let currentDestLat = 40.7484;
   let currentDestLng = -73.9857;
+  let currentDestinationLabel = "Customer Destination";
   let currentRouteCoords = [];
   let cityPresetsData = {};
   let isAnimatingCourier = false;
@@ -377,6 +378,9 @@ document.addEventListener("DOMContentLoaded", () => {
   async function calculateAndDrawRoute(destLat, destLng, addressLabel = null) {
     currentDestLat = destLat;
     currentDestLng = destLng;
+    if (addressLabel) {
+      currentDestinationLabel = addressLabel;
+    }
 
     if (destMarker) {
       destMarker.setLatLng([destLat, destLng]);
@@ -610,6 +614,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (targetId === "riders-tab") {
         loadRidersList();
         loadFleetStats();
+        requestNativeSensorTracking(false);
       }
 
 
@@ -691,7 +696,9 @@ document.addEventListener("DOMContentLoaded", () => {
       Vehicle_Type: document.getElementById("vehicle").value,
       Preparation_Time_min: parseFloat(document.getElementById("prep-time").value),
       Courier_Experience_yrs: parseFloat(document.getElementById("experience").value),
-      Destination_Address: destinationAddressInput ? destinationAddressInput.value : "",
+      Destination_Address: (destinationAddressInput && destinationAddressInput.value)
+        ? destinationAddressInput.value
+        : (currentDestinationLabel || (currentDestLat ? `Dropoff (${currentDestLat.toFixed(4)}, ${currentDestLng.toFixed(4)})` : "Customer Destination")),
       Dropoff_Lat: currentDestLat,
       Dropoff_Lng: currentDestLng,
     };
@@ -1108,61 +1115,176 @@ document.addEventListener("DOMContentLoaded", () => {
   let currentRidersFleet = [];
   let currentFleetFilter = "all";
 
-  // Auto GPS Detection for Rider
+  // Native GPS Sensor Auto-Tracking Controller (Hardware-Free)
+  const gpsSensorPanel = document.getElementById("gps-sensor-panel");
+  const sensorStatusLabel = document.getElementById("sensor-status-label");
+  const permissionStateBadge = document.getElementById("permission-state-badge");
+  const btnRequestSensorPerm = document.getElementById("btn-request-sensor-perm");
+  const sensorTelemetryStrip = document.getElementById("sensor-telemetry-strip");
+  const telemetryLat = document.getElementById("telemetry-lat");
+  const telemetryLng = document.getElementById("telemetry-lng");
+  const telemetryAcc = document.getElementById("telemetry-acc");
+
+  let activeSensorWatchId = null;
+  let lastSensorCoords = null;
+  let activeCourierRiderId = localStorage.getItem("active_device_rider_id") || null;
+
+  function requestNativeSensorTracking(userInitiated = false) {
+    if (!navigator.geolocation) {
+      if (sensorStatusLabel) {
+        sensorStatusLabel.textContent = "⚠️ Native GPS Sensor not supported by browser. Using station coordinates.";
+        sensorStatusLabel.style.color = "#dc2626";
+      }
+      if (permissionStateBadge) {
+        permissionStateBadge.textContent = "Unsupported";
+        permissionStateBadge.style.background = "#fee2e2";
+        permissionStateBadge.style.color = "#991b1b";
+      }
+      if (riderGpsStatusHint) {
+        riderGpsStatusHint.textContent = "⚠️ Geolocation not supported by browser. Using hotel base station.";
+        riderGpsStatusHint.style.color = "#dc2626";
+      }
+      fallbackToHotelCoordinates();
+      return;
+    }
+
+    if (sensorStatusLabel) {
+      sensorStatusLabel.textContent = "📡 Native Device GPS Sensor: Requesting Live Permission...";
+      sensorStatusLabel.style.color = "var(--primary)";
+    }
+    if (permissionStateBadge) {
+      permissionStateBadge.textContent = "Prompting...";
+      permissionStateBadge.style.background = "#fef3c7";
+      permissionStateBadge.style.color = "#b45309";
+    }
+    if (riderGpsStatusHint) {
+      riderGpsStatusHint.textContent = "⏳ Requesting device GPS coordinates (Please select 'Allow all the time')...";
+      riderGpsStatusHint.style.color = "var(--primary)";
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      onSensorPositionSuccess,
+      (err) => onSensorPositionError(err, userInitiated),
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+    );
+
+    // Continuous real-time native sensor watch
+    if (activeSensorWatchId === null) {
+      try {
+        activeSensorWatchId = navigator.geolocation.watchPosition(
+          onSensorPositionSuccess,
+          (err) => console.warn("Native sensor continuous watch warning:", err.message),
+          { enableHighAccuracy: true, maximumAge: 4000, timeout: 15000 }
+        );
+      } catch (e) {
+        console.warn("Watch position error:", e);
+      }
+    }
+  }
+
+  async function onSensorPositionSuccess(position) {
+    const lat = parseFloat(position.coords.latitude.toFixed(6));
+    const lng = parseFloat(position.coords.longitude.toFixed(6));
+    const acc = Math.round(position.coords.accuracy || 10);
+    lastSensorCoords = { lat, lng, acc };
+
+    if (riderLatInput) riderLatInput.value = lat;
+    if (riderLngInput) riderLngInput.value = lng;
+
+    if (gpsSensorPanel) gpsSensorPanel.classList.add("sensor-active");
+    if (sensorStatusLabel) {
+      sensorStatusLabel.textContent = `🟢 Native Device GPS Sensor: ACTIVE (Live Auto-Tracking • ±${acc}m)`;
+      sensorStatusLabel.style.color = "#065f46";
+    }
+    if (permissionStateBadge) {
+      permissionStateBadge.textContent = "Granted (Allow All Time / In Use)";
+      permissionStateBadge.style.background = "#dcfce7";
+      permissionStateBadge.style.color = "#15803d";
+    }
+    if (btnRequestSensorPerm) {
+      btnRequestSensorPerm.innerHTML = "<span>✅ Live Sensor Active</span>";
+      btnRequestSensorPerm.style.background = "#059669";
+    }
+    if (telemetryLat) telemetryLat.textContent = lat;
+    if (telemetryLng) telemetryLng.textContent = lng;
+    if (telemetryAcc) telemetryAcc.textContent = `±${acc}m`;
+    if (sensorTelemetryStrip) sensorTelemetryStrip.classList.remove("hidden");
+
+    if (riderGpsStatusHint) {
+      riderGpsStatusHint.textContent = `✅ Live Native GPS Sensor Locked: [${lat}, ${lng}] (Accuracy: ~${acc}m) • Hardware-Free Tracking Active`;
+      riderGpsStatusHint.style.color = "#059669";
+    }
+
+    if (riderAddressInput && (!riderAddressInput.value.trim() || riderAddressInput.value.startsWith("Live GPS") || riderAddressInput.value.startsWith("Live Native") || riderAddressInput.value.startsWith("Station near"))) {
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`, {
+          headers: { "Accept-Language": "en" }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.display_name) {
+            riderAddressInput.value = data.display_name.split(",").slice(0, 3).join(",").trim();
+          }
+        }
+      } catch (_) {
+        riderAddressInput.value = `Live GPS Location (${lat}, ${lng})`;
+      }
+    }
+
+    // Auto background sync to FastAPI if rider is registered on this device
+    if (activeCourierRiderId) {
+      try {
+        await fetch(`${API_BASE}/api/riders/${activeCourierRiderId}/location`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            current_lat: lat,
+            current_lng: lng,
+            current_address: riderAddressInput && riderAddressInput.value ? riderAddressInput.value : `Live Device Sensor (${lat}, ${lng})`,
+          }),
+        });
+      } catch (_) {}
+    }
+  }
+
+  function onSensorPositionError(error, userInitiated = false) {
+    console.warn("Native geolocation error:", error.code, error.message);
+    fallbackToHotelCoordinates();
+
+    if (error.code === 1) { // PERMISSION_DENIED
+      if (sensorStatusLabel) {
+        sensorStatusLabel.textContent = "⚠️ Location Permission Denied: Allow Delivery App to Access Location";
+        sensorStatusLabel.style.color = "#dc2626";
+      }
+      if (permissionStateBadge) {
+        permissionStateBadge.textContent = "Permission Blocked";
+        permissionStateBadge.style.background = "#fee2e2";
+        permissionStateBadge.style.color = "#991b1b";
+      }
+      if (riderGpsStatusHint) {
+        riderGpsStatusHint.textContent = `⚠️ Location permission denied. Please select "Allow all the time" or "Allow" in your browser address bar/settings to enable hardware-free live tracking. Using hotel base location: [${hotelState.lat}, ${hotelState.lng}]`;
+        riderGpsStatusHint.style.color = "#d97706";
+      }
+      if (userInitiated) {
+        alert("Location access was denied. To enable native hardware-free GPS tracking, please click the site settings icon in your browser address bar and choose 'Allow' for Location.");
+      }
+    } else {
+      if (riderGpsStatusHint) {
+        riderGpsStatusHint.textContent = `ℹ️ GPS sensor timed out or unavailable. Using hotel base location: [${hotelState.lat}, ${hotelState.lng}]`;
+        riderGpsStatusHint.style.color = "#d97706";
+      }
+    }
+  }
+
+  if (btnRequestSensorPerm) {
+    btnRequestSensorPerm.addEventListener("click", () => {
+      requestNativeSensorTracking(true);
+    });
+  }
+
   if (btnDetectRiderGps) {
     btnDetectRiderGps.addEventListener("click", () => {
-      if (!navigator.geolocation) {
-        if (riderGpsStatusHint) {
-          riderGpsStatusHint.textContent = "⚠️ Geolocation not supported by browser. Using hotel base station.";
-          riderGpsStatusHint.style.color = "#dc2626";
-        }
-        fallbackToHotelCoordinates();
-        return;
-      }
-
-      if (riderGpsStatusHint) {
-        riderGpsStatusHint.textContent = "⏳ Requesting device GPS coordinates...";
-        riderGpsStatusHint.style.color = "var(--primary)";
-      }
-
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const lat = parseFloat(position.coords.latitude.toFixed(6));
-          const lng = parseFloat(position.coords.longitude.toFixed(6));
-          if (riderLatInput) riderLatInput.value = lat;
-          if (riderLngInput) riderLngInput.value = lng;
-
-          if (riderGpsStatusHint) {
-            riderGpsStatusHint.textContent = `✅ Device GPS Locked: [${lat}, ${lng}] (Accuracy: ~${Math.round(position.coords.accuracy)}m)`;
-            riderGpsStatusHint.style.color = "#059669";
-          }
-
-          if (riderAddressInput && !riderAddressInput.value.trim()) {
-            try {
-              const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`, {
-                headers: { "Accept-Language": "en" }
-              });
-              if (res.ok) {
-                const data = await res.json();
-                if (data && data.display_name) {
-                  riderAddressInput.value = data.display_name.split(",").slice(0, 3).join(",").trim();
-                }
-              }
-            } catch (_) {
-              riderAddressInput.value = `Live GPS Location (${lat}, ${lng})`;
-            }
-          }
-        },
-        (error) => {
-          console.warn("Geolocation warning:", error.message);
-          fallbackToHotelCoordinates();
-          if (riderGpsStatusHint) {
-            riderGpsStatusHint.textContent = `ℹ️ GPS permission denied/timed out. Using hotel base location: [${hotelState.lat}, ${hotelState.lng}]`;
-            riderGpsStatusHint.style.color = "#d97706";
-          }
-        },
-        { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
-      );
+      requestNativeSensorTracking(true);
     });
   }
 
@@ -1303,13 +1425,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
         <div class="rider-loc-row">
           <span class="rider-loc-icon">&#128205;</span>
-          <div>
-            <div style="font-weight: 600; color: var(--text-main); font-size: 0.78rem;">
-              ${rider.current_address || "Hub Base Station"}
+          <div style="flex: 1;">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.4rem;">
+              <span style="font-weight: 600; color: var(--text-main); font-size: 0.78rem;">
+                ${rider.current_address || "Hub Base Station"}
+              </span>
+              <span class="rider-live-gps-badge">
+                <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#10b981;"></span>
+                Live Native GPS
+              </span>
             </div>
-            <div style="font-size: 0.7rem; color: #64748b;">
-              GPS: [${Number(rider.current_lat || 0).toFixed(4)}, ${Number(rider.current_lng || 0).toFixed(4)}]
+            <div style="font-size: 0.7rem; color: #64748b; margin-top: 0.15rem;">
+              Coordinates: [${Number(rider.current_lat || 0).toFixed(5)}, ${Number(rider.current_lng || 0).toFixed(5)}]
             </div>
+            <a href="https://www.openstreetmap.org/?mlat=${rider.current_lat}&mlon=${rider.current_lng}#map=16/${rider.current_lat}/${rider.current_lng}" target="_blank" rel="noopener" class="rider-card-map-link">
+              🗺️ Track on Live Map &rarr;
+            </a>
           </div>
         </div>
 
@@ -1321,8 +1452,8 @@ document.addEventListener("DOMContentLoaded", () => {
           </select>
 
           <div style="display: flex; gap: 0.35rem;">
-            <button type="button" class="rider-action-btn btn-rider-loc-refresh" data-rider-id="${rider.id}" title="Refresh courier GPS to current station">
-              📍 Ping GPS
+            <button type="button" class="rider-action-btn btn-rider-loc-refresh" data-rider-id="${rider.id}" title="Re-sync courier device native GPS sensor">
+              📍 Sync Sensor
             </button>
             <button type="button" class="rider-action-btn btn-rider-delete" data-rider-id="${rider.id}" title="Remove courier from registry">
               🗑️
@@ -1352,25 +1483,42 @@ document.addEventListener("DOMContentLoaded", () => {
         });
       }
 
-      // Ping GPS listener
+      // Ping GPS listener (hardware-free sensor re-sync)
       const pingBtn = card.querySelector(".btn-rider-loc-refresh");
       if (pingBtn) {
         pingBtn.addEventListener("click", () => {
           if (navigator.geolocation) {
+            pingBtn.textContent = "⏳ Syncing...";
             navigator.geolocation.getCurrentPosition(async (pos) => {
               const pingLat = parseFloat(pos.coords.latitude.toFixed(6));
               const pingLng = parseFloat(pos.coords.longitude.toFixed(6));
+              let addr = `Live Native Sensor (${pingLat}, ${pingLng})`;
+              try {
+                const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pingLat}&lon=${pingLng}&format=json`, {
+                  headers: { "Accept-Language": "en" }
+                });
+                if (r.ok) {
+                  const d = await r.json();
+                  if (d && d.display_name) addr = d.display_name.split(",").slice(0, 3).join(",").trim();
+                }
+              } catch (_) {}
               await fetch(`${API_BASE}/api/riders/${rider.id}/location`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                   current_lat: pingLat,
                   current_lng: pingLng,
-                  current_address: `Live Ping Station (${pingLat}, ${pingLng})`,
+                  current_address: addr,
                 }),
               });
-              loadRidersList();
-            });
+              pingBtn.textContent = "✅ Synced";
+              setTimeout(() => {
+                loadRidersList();
+              }, 400);
+            }, (err) => {
+              alert(`Could not read native GPS sensor: ${err.message}`);
+              pingBtn.textContent = "📍 Sync Sensor";
+            }, { enableHighAccuracy: true, timeout: 8000 });
           }
         });
       }
@@ -1407,7 +1555,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Rider Registration Form Submission
+  // Rider Registration Form Submission with Native GPS Auto-Capture
   if (riderRegisterForm) {
     riderRegisterForm.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -1419,6 +1567,9 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
+      const latVal = riderLatInput && riderLatInput.value ? parseFloat(riderLatInput.value) : (lastSensorCoords ? lastSensorCoords.lat : null);
+      const lngVal = riderLngInput && riderLngInput.value ? parseFloat(riderLngInput.value) : (lastSensorCoords ? lastSensorCoords.lng : null);
+
       const payload = {
         rider_name: nameVal,
         phone: phoneVal,
@@ -1427,8 +1578,8 @@ document.addEventListener("DOMContentLoaded", () => {
         rating: parseFloat(riderRatingInput ? riderRatingInput.value : "4.8") || 4.8,
         status: riderStatusInput ? riderStatusInput.value : "Available",
         current_address: riderAddressInput ? riderAddressInput.value.trim() : "",
-        current_lat: riderLatInput && riderLatInput.value ? parseFloat(riderLatInput.value) : null,
-        current_lng: riderLngInput && riderLngInput.value ? parseFloat(riderLngInput.value) : null,
+        current_lat: latVal,
+        current_lng: lngVal,
       };
 
       if (btnSubmitRider) btnSubmitRider.disabled = true;
@@ -1442,9 +1593,22 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         if (res.ok) {
+          const resData = await res.json();
+          const savedRider = resData.rider || resData;
+          if (savedRider && savedRider.id) {
+            activeCourierRiderId = savedRider.id;
+            localStorage.setItem("active_device_rider_id", savedRider.id);
+          }
+
           riderRegisterForm.reset();
+          // Restore latest coordinates into form inputs so form stays primed
+          if (lastSensorCoords) {
+            if (riderLatInput) riderLatInput.value = lastSensorCoords.lat;
+            if (riderLngInput) riderLngInput.value = lastSensorCoords.lng;
+          }
+
           if (riderGpsStatusHint) {
-            riderGpsStatusHint.textContent = `✅ Courier ${payload.rider_name} successfully registered in fleet!`;
+            riderGpsStatusHint.textContent = `✅ Courier ${payload.rider_name} successfully registered with Live Native GPS coordinates [${payload.current_lat}, ${payload.current_lng}] without hardware device!`;
             riderGpsStatusHint.style.color = "#059669";
           }
           await loadRidersList();

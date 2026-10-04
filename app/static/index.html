@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Delivery Time Prediction & Merchant Intelligence</title>
-  <link rel="stylesheet" href="style.css?v=15" />
+  <link rel="stylesheet" href="style.css?v=17" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -141,7 +141,7 @@
       margin-bottom: 0 !important;
     }
     .right-col .map-container-box:not(.expanded-modal) {
-      height: 250px !important;
+      height: 330px !important;
     }
     .right-col .map-container-box.expanded-modal {
       position: fixed !important;
@@ -421,21 +421,6 @@
                   <span class="expand-icon">&#x26F6;</span> <span id="expand-btn-text">Expand Map</span>
                 </button>
               </div>
-            </div>
-
-            <!-- Customer Destination Address Input -->
-            <div class="form-group" style="margin-bottom: 0.65rem;">
-              <label for="destination-address-input" style="font-size: 0.8rem;">Customer Destination Address / Landmark</label>
-              <div class="dest-input-wrapper">
-                <span class="dest-pin">&#128205;</span>
-                <input type="text" id="destination-address-input" placeholder="Type address or click on map..." />
-              </div>
-            </div>
-
-            <!-- Quick Landmark Preset Pills -->
-            <div class="landmark-pills-row" id="landmark-pills-container">
-              <span class="pills-label">Quick Hubs:</span>
-              <!-- Populated dynamically via JS -->
             </div>
 
             <!-- Leaflet Map Container (Expandable to Modal) -->
@@ -743,6 +728,67 @@
           Register delivery couriers to your active fleet. Fetch real-time device coordinates automatically via browser GPS or let the system resolve dispatch locations near your hotel hub.
         </p>
 
+        <!-- Native GPS Sensor Auto-Tracking & Permission Banner -->
+        <div class="gps-sensor-panel" id="gps-sensor-panel">
+          <div class="gps-sensor-badge-row">
+            <div class="gps-sensor-status-indicator">
+              <span class="sensor-pulse-ring" id="sensor-pulse-ring"></span>
+              <span class="sensor-dot" id="sensor-dot"></span>
+              <span id="sensor-status-label" style="font-weight: 600; font-size: 0.85rem; color: var(--text-main);">
+                Native Device GPS Sensor: Initializing Auto-Tracking...
+              </span>
+            </div>
+            <span class="sensor-tech-pill" id="sensor-tech-pill">
+              🛰️ Hardware-Free Tracking
+            </span>
+          </div>
+
+          <!-- Location Permission Notice / Request Prompt -->
+          <div class="gps-permission-box" id="gps-permission-box">
+            <div class="gps-permission-icon-col">
+              <span class="gps-permission-radar-icon">&#128205;</span>
+            </div>
+            <div class="gps-permission-content">
+              <div class="gps-permission-title-row">
+                <span class="gps-permission-title">Allow Delivery App to Access this Device Location</span>
+                <span class="permission-state-badge" id="permission-state-badge">Permission Required</span>
+              </div>
+              <p class="gps-permission-msg">
+                When prompted by your browser, please select <strong>"Allow all the time"</strong> (or <strong>"Allow while visiting"</strong>). Our system captures real-time coordinates directly through your device's built-in GPS sensor &mdash; <em>no external hardware GPS tracker required</em>.
+              </p>
+            </div>
+            <div class="gps-permission-btn-col">
+              <button type="button" class="btn-activate-sensor" id="btn-request-sensor-perm">
+                <span>&#128225; Allow & Activate Live GPS</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Live Telemetry Readout (visible when sensor is active) -->
+          <div class="sensor-telemetry-strip hidden" id="sensor-telemetry-strip">
+            <div class="telemetry-item">
+              <span class="telemetry-lbl">Sensor Status:</span>
+              <span class="telemetry-val" style="color: #059669; font-weight: 700;">🟢 Transmitting Live</span>
+            </div>
+            <div class="telemetry-item">
+              <span class="telemetry-lbl">Latitude:</span>
+              <span class="telemetry-val" id="telemetry-lat">--</span>
+            </div>
+            <div class="telemetry-item">
+              <span class="telemetry-lbl">Longitude:</span>
+              <span class="telemetry-val" id="telemetry-lng">--</span>
+            </div>
+            <div class="telemetry-item">
+              <span class="telemetry-lbl">Accuracy:</span>
+              <span class="telemetry-val" id="telemetry-acc">--</span>
+            </div>
+            <div class="telemetry-item">
+              <span class="telemetry-lbl">Hardware:</span>
+              <span class="telemetry-val" style="color: #4f46e5; font-weight: 600;">Native Browser Sensor</span>
+            </div>
+          </div>
+        </div>
+
         <form id="rider-register-form" onsubmit="return false;" novalidate>
           <div class="fleet-form-grid">
             <!-- Full Name -->
@@ -942,7 +988,7 @@
     </div>
   </div>
 
-  <script src="script.js?v=15"></script>
+  <script src="script.js?v=17"></script>
 </body>
 </html>
 
