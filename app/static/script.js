@@ -600,11 +600,18 @@ document.addEventListener("DOMContentLoaded", () => {
       tabButtons.forEach((b) => b.classList.remove("active"));
       tabContents.forEach((c) => c.classList.add("hidden"));
 
-      btn.classList.add("active");
       const targetId = btn.getAttribute("data-tab");
+      // Synchronize all tab buttons matching this target (both desktop top nav and mobile bottom nav)
+      document.querySelectorAll(`.tab-btn[data-tab="${targetId}"]`).forEach((b) => b.classList.add("active"));
+
       const targetTab = document.getElementById(targetId);
       if (targetTab) {
         targetTab.classList.remove("hidden");
+      }
+
+      // Smooth scroll to top on mobile app navigation
+      if (window.innerWidth <= 860) {
+        window.scrollTo({ top: 0, behavior: "smooth" });
       }
 
       if (targetId === "history-tab") {
@@ -616,7 +623,6 @@ document.addEventListener("DOMContentLoaded", () => {
         loadFleetStats();
         requestNativeSensorTracking(false);
       }
-
 
       // Re-invalidate Leaflet map size on tab switch
       if (targetId === "single-tab" && map) {
@@ -976,7 +982,9 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!res.ok) return;
       const data = await res.json();
 
-      historyCountBadge.textContent = data.total;
+      if (historyCountBadge) historyCountBadge.textContent = data.total;
+      const bnavHistoryBadge = document.getElementById("bnav-history-badge");
+      if (bnavHistoryBadge) bnavHistoryBadge.textContent = data.total;
       currentHistoryData = data.orders || [];
 
       if (badgeOnly) return;
@@ -1327,6 +1335,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (ridersCountBadge) {
         ridersCountBadge.textContent = currentRidersFleet.length;
+      }
+      const bnavRidersBadge = document.getElementById("bnav-riders-badge");
+      if (bnavRidersBadge) {
+        bnavRidersBadge.textContent = currentRidersFleet.length;
       }
 
       populateAssignRiderSelect();
