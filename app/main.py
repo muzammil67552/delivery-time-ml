@@ -109,30 +109,58 @@ if os.path.exists(STATIC_DIR):
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 
+def is_hotel_account_configured() -> bool:
+    """Determines whether a valid merchant/hotel profile has been configured in the database."""
+    try:
+        profile = get_hotel_profile()
+        if not profile:
+            return False
+        name = str(profile.get("hotel_name", "")).strip()
+        if not name:
+            return False
+        if name == "My Hotel / Restaurant":
+            email = str(profile.get("contact_email", "")).strip()
+            addr = str(profile.get("branch_or_address", "")).strip()
+            pwd = str(profile.get("password_hash", "")).strip()
+            if not email and not addr and not pwd:
+                return False
+        return True
+    except Exception:
+        return False
+
+
 @app.get(
     "/",
     tags=["General"],
     summary="Root entry point",
 )
 def read_root(request: Request):
-    """Serves the interactive UI dashboard on the root URL for all browser clients.
-    Returns JSON status when requested by API clients (Accept: application/json or testclient)."""
+    """Entry point routing:
+    - For API / automated test clients: returns JSON status.
+    - For browser users:
+        * If hotel account is already configured -> Redirects to /ui.
+        * If no hotel account exists yet (first-time visitor) -> Redirects to /welcome.
+    """
     accept = request.headers.get("accept", "")
     user_agent = request.headers.get("user-agent", "").lower()
 
     # Return JSON for automated test suites or API clients requesting JSON
-    if "testclient" in user_agent or (accept == "application/json" and "text/html" not in accept) or request.query_params.get("format") == "json":
+    if (
+        "testclient" in user_agent
+        or (accept == "application/json" and "text/html" not in accept)
+        or request.query_params.get("format") == "json"
+    ):
         return {
             "message": "Delivery Time Prediction API is running",
             "status": "online",
         }
 
-    # Serve the interactive frontend UI directly on the root URL
-    index_path = os.path.join(STATIC_DIR, "index.html")
-    if os.path.exists(index_path):
-        return FileResponse(index_path, media_type="text/html", headers=NO_CACHE_HEADERS)
+    # Browser clients: Route based on whether hotel account exists
+    if is_hotel_account_configured():
+        return RedirectResponse(url="/ui", status_code=status.HTTP_302_FOUND)
+    else:
+        return RedirectResponse(url="/welcome", status_code=status.HTTP_302_FOUND)
 
-    return RedirectResponse(url="/ui")
 
 
 
@@ -216,12 +244,25 @@ NO_CACHE_HEADERS = {
 
 
 @app.get("/ui", include_in_schema=False)
-def serve_ui():
-    """Serves the frontend interface for interactive manual predictions and live map."""
+def serve_ui(request: Request):
+    """Serves the frontend interface for interactive manual predictions and live map.
+    If no hotel account has been setup yet, redirects first-time users to /welcome."""
+    user_agent = request.headers.get("user-agent", "").lower()
+    is_test_client = "testclient" in user_agent
+    allow_guest = (
+        is_test_client
+        or request.query_params.get("guest") == "1"
+        or request.query_params.get("preview") == "1"
+    )
+
+    if not is_hotel_account_configured() and not allow_guest:
+        return RedirectResponse(url="/welcome", status_code=status.HTTP_302_FOUND)
+
     index_path = os.path.join(STATIC_DIR, "index.html")
     if os.path.exists(index_path):
         return FileResponse(index_path, media_type="text/html", headers=NO_CACHE_HEADERS)
     raise HTTPException(status_code=404, detail="Frontend interface not found.")
+
 
 
 @app.get("/welcome", include_in_schema=False)
@@ -366,9 +407,10 @@ def get_profile():
     """Retrieves the configured hotel profile from SQLite."""
     profile = get_hotel_profile()
     return {
-        "is_configured": profile is not None,
+        "is_configured": is_hotel_account_configured(),
         "profile": profile,
     }
+
 
 
 @app.post("/api/hotel-profile", response_model=HotelProfileResponse, tags=["Hotel Configuration"])

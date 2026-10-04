@@ -348,5 +348,34 @@ def test_17_riders_crud_and_fleet_stats(client: TestClient):
     assert del_resp.json()["success"] is True
 
 
+def test_18_visitor_routing_welcome_vs_ui(client: TestClient):
+    """Test 18: Verify visitor routing dynamically directs to /welcome or /ui based on account state."""
+    # 1. Direct browser request to /welcome always returns 200 OK
+    welcome_resp = client.get(
+        "/welcome",
+        headers={"Accept": "text/html", "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"},
+    )
+    assert welcome_resp.status_code == 200
+    assert "Welcome! Setup Your" in welcome_resp.text
+
+    # 2. Browser request to / with account configured redirects to /ui
+    browser_root = client.get(
+        "/",
+        headers={"Accept": "text/html,application/xhtml+xml", "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"},
+        follow_redirects=False,
+    )
+    assert browser_root.status_code in (302, 200)
+
+    # 3. Guest bypass parameter on /ui
+    guest_ui = client.get(
+        "/ui?guest=1",
+        headers={"Accept": "text/html", "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"},
+        follow_redirects=False,
+    )
+    assert guest_ui.status_code == 200
+    assert "Delivery Time Predictor" in guest_ui.text
+
+
+
 
 

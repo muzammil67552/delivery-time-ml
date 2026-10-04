@@ -180,7 +180,12 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         renderLandmarkPills();
       } else {
-        // First-time setup: initialize map silently with sensible defaults (no modal popup)
+        // If hotel profile is not yet configured and not in guest/preview mode, guide visitor to /welcome
+        const isGuest = window.location.search.includes("guest=1") || window.location.search.includes("preview=1");
+        if (!isGuest) {
+          window.location.href = "/welcome";
+          return;
+        }
         initMap();
         renderLandmarkPills();
       }
