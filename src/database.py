@@ -10,23 +10,46 @@ import sqlite3
 from datetime import datetime
 from typing import Dict, Any, Optional, List
 
-DEFAULT_DB_PATH = os.getenv(
-    "DATABASE_PATH",
-    os.path.join(
+def resolve_database_path() -> str:
+    env_path = os.getenv("DATABASE_PATH")
+    if env_path:
+        return env_path
+
+    # In serverless environments like Vercel, the repository root filesystem is read-only.
+    # We automatically use the writable /tmp partition and seed it from bundled data if present.
+    if os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME"):
+        tmp_db = "/tmp/delivery_platform.db"
+        bundled_db = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "data",
+            "delivery_platform.db",
+        )
+        if os.path.exists(bundled_db) and not os.path.exists(tmp_db):
+            try:
+                import shutil
+                shutil.copy2(bundled_db, tmp_db)
+            except Exception:
+                pass
+        return tmp_db
+
+    return os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
         "data",
         "delivery_platform.db",
-    ),
-)
+    )
+
+
+DEFAULT_DB_PATH = resolve_database_path()
 
 
 def get_db_connection(db_path: Optional[str] = None) -> sqlite3.Connection:
     """Creates a configured connection to the SQLite database."""
-    target_path = db_path or DEFAULT_DB_PATH
+    target_path = db_path or resolve_database_path()
     os.makedirs(os.path.dirname(target_path), exist_ok=True)
     conn = sqlite3.connect(target_path, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     return conn
+
 
 
 def init_db(db_path: Optional[str] = None) -> None:

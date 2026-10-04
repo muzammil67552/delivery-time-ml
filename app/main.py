@@ -10,10 +10,11 @@ from datetime import datetime
 from contextlib import asynccontextmanager
 from typing import Dict, Any, Optional
 
-from fastapi import FastAPI, HTTPException, status, UploadFile, File, Form, Query, Response
+from fastapi import FastAPI, HTTPException, status, UploadFile, File, Form, Query, Response, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
+
 
 from dotenv import load_dotenv
 
@@ -66,21 +67,25 @@ from src.routing import (
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
 
 
+def ensure_app_ready():
+    """Ensures database is initialized and model pipeline is warmed up (critical for serverless platforms like Vercel)."""
+    if not getattr(app.state, "pipeline_loaded", False):
+        try:
+            init_db()
+            pipeline = load_production_pipeline()
+            app.state.pipeline_loaded = pipeline is not None
+            app.state.load_error = None
+        except Exception as exc:
+            app.state.pipeline_loaded = False
+            app.state.load_error = str(exc)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Lifespan context manager that warms and caches the ML pipeline and initializes SQLite."""
-    try:
-        # Initialize SQLite database tables
-        init_db()
-
-        # Pre-load and cache the production pipeline into memory once
-        pipeline = load_production_pipeline()
-        app.state.pipeline_loaded = pipeline is not None
-        app.state.load_error = None
-    except Exception as exc:
-        app.state.pipeline_loaded = False
-        app.state.load_error = str(exc)
+    ensure_app_ready()
     yield
+
 
 
 app = FastAPI(
@@ -106,16 +111,20 @@ if os.path.exists(STATIC_DIR):
 
 @app.get(
     "/",
-    response_model=RootResponse,
     tags=["General"],
     summary="Root confirmation endpoint",
 )
-def read_root():
-    """Returns a welcome confirmation indicating the prediction API service is running."""
+def read_root(request: Request):
+    """Returns a welcome confirmation indicating the prediction API service is running.
+    Redirects web browsers with Accept: text/html directly to the interactive UI."""
+    accept_header = request.headers.get("accept", "")
+    if "text/html" in accept_header and "application/json" not in accept_header and "*/*" not in accept_header:
+        return RedirectResponse(url="/ui")
     return {
         "message": "Delivery Time Prediction API is running",
         "status": "online",
     }
+
 
 
 @app.get(
@@ -126,6 +135,7 @@ def read_root():
 )
 def read_health():
     """Reports operational readiness and confirms the production pipeline is loaded in memory."""
+    ensure_app_ready()
     is_loaded = getattr(app.state, "pipeline_loaded", False)
     if not is_loaded:
         raise HTTPException(
@@ -136,6 +146,7 @@ def read_health():
         "status": "healthy",
         "model_loaded": True,
     }
+
 
 
 @app.post(
