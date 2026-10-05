@@ -53,13 +53,15 @@
 
     /* Top Navigation */
     .welcome-nav {
-      padding: 1.25rem 2rem;
+      padding: 1rem 2.5rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
       border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      background: rgba(15, 23, 42, 0.7);
+      background: rgba(15, 23, 42, 0.75);
       backdrop-filter: blur(12px);
+      width: 100%;
+      box-sizing: border-box;
     }
 
     .brand-wrap {
@@ -68,6 +70,7 @@
       gap: 0.75rem;
       text-decoration: none;
       color: #ffffff;
+      flex-shrink: 0;
     }
 
     .brand-logo {
@@ -98,6 +101,48 @@
       border: 1px solid rgba(99, 102, 241, 0.3);
     }
 
+    .btn-signin-nav {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.22), rgba(79, 70, 229, 0.35));
+      border: 1px solid rgba(165, 180, 252, 0.45);
+      color: #ffffff;
+      font-size: 0.88rem;
+      font-weight: 600;
+      padding: 0.52rem 1.15rem;
+      border-radius: 9999px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 10px rgba(99, 102, 241, 0.2);
+      font-family: inherit;
+      outline: none;
+      flex-shrink: 0;
+    }
+
+    .btn-signin-nav:hover {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.4), rgba(79, 70, 229, 0.5));
+      border-color: #a5b4fc;
+      box-shadow: 0 0 16px rgba(99, 102, 241, 0.4);
+      transform: translateY(-1px);
+    }
+
+    .btn-signin-nav:active {
+      transform: scale(0.97);
+    }
+
+    .btn-signin-icon {
+      font-size: 0.95rem;
+      line-height: 1;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+
     .nav-actions a {
       color: #cbd5e1;
       text-decoration: none;
@@ -116,10 +161,18 @@
     /* Hero & Container */
     .onboarding-container {
       width: 100%;
-      max-width: 1050px;
-      margin: 2.5rem auto 4rem auto;
-      padding: 0 1.5rem;
+      max-width: 1440px;
+      margin: 2.25rem auto 4rem auto;
+      padding: 0 2.25rem;
       flex: 1;
+      box-sizing: border-box;
+    }
+
+    @media (min-width: 1750px) {
+      .onboarding-container {
+        max-width: 1580px;
+        padding: 0 3rem;
+      }
     }
 
     .hero-header {
@@ -168,9 +221,10 @@
     .setup-card {
       background: var(--card-bg);
       border-radius: var(--radius-lg);
-      padding: 2.5rem;
+      padding: 2.75rem 3.25rem;
       box-shadow: var(--shadow-lg), var(--shadow-glow);
       border: 1px solid rgba(255, 255, 255, 0.12);
+      box-sizing: border-box;
     }
 
     .form-section-title {
@@ -322,7 +376,7 @@
     }
 
     .mini-map-box {
-      height: 220px;
+      height: 270px;
       border-radius: var(--radius-sm);
       overflow: hidden;
       border: 1px solid var(--border-color);
@@ -502,6 +556,196 @@
 
     .hidden {
       display: none !important;
+    }
+
+    /* =========================================================================
+       HOTEL SIGN IN MODAL
+       ========================================================================= */
+    .signin-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(12px);
+      z-index: 99999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.25rem;
+      animation: fadeIn 0.2s ease-out;
+    }
+
+    .signin-modal-card {
+      background: #ffffff;
+      width: 100%;
+      max-width: 440px;
+      border-radius: var(--radius-lg);
+      padding: 2.25rem 2rem;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      position: relative;
+      animation: scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .signin-modal-close {
+      position: absolute;
+      top: 1.15rem;
+      right: 1.15rem;
+      background: #f1f5f9;
+      border: none;
+      border-radius: 50%;
+      width: 34px;
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #64748b;
+      font-size: 1.35rem;
+      line-height: 1;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .signin-modal-close:hover {
+      background: #e2e8f0;
+      color: #0f172a;
+      transform: rotate(90deg);
+    }
+
+    .signin-header {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .signin-icon-pill {
+      width: 52px;
+      height: 52px;
+      margin: 0 auto 0.85rem;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+      border: 1px solid #c7d2fe;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      box-shadow: 0 4px 14px rgba(79, 70, 229, 0.18);
+    }
+
+    .signin-header h2 {
+      font-size: 1.45rem;
+      font-weight: 800;
+      color: var(--text-main);
+      margin-bottom: 0.35rem;
+      letter-spacing: -0.02em;
+    }
+
+    .signin-header p {
+      font-size: 0.86rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .signin-alert-banner {
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.84rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1.15rem;
+      animation: fadeIn 0.2s ease;
+    }
+
+    .signin-alert-error {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #b91c1c;
+    }
+
+    .signin-alert-success {
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      color: #065f46;
+    }
+
+    .signin-form {
+      display: flex;
+      flex-direction: column;
+      gap: 1.15rem;
+    }
+
+    .signin-detected-badge {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      color: #166534;
+      border-radius: 6px;
+      padding: 0.35rem 0.65rem;
+      font-size: 0.76rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 0.35rem;
+      transition: all 0.15s;
+    }
+
+    .signin-detected-badge:hover {
+      background: #dcfce7;
+      border-color: #86efac;
+    }
+
+    .btn-signin-submit {
+      width: 100%;
+      padding: 0.85rem 1.25rem;
+      font-size: 0.98rem;
+      font-weight: 700;
+      color: #ffffff;
+      background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-top: 0.4rem;
+      box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+
+    .btn-signin-submit:hover {
+      box-shadow: 0 6px 20px rgba(79, 70, 229, 0.45);
+      transform: translateY(-1px);
+    }
+
+    .btn-signin-submit:active {
+      transform: translateY(0);
+    }
+
+    .btn-signin-submit:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .signin-modal-footer {
+      margin-top: 1.25rem;
+      text-align: center;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      border-top: 1px solid #f1f5f9;
+      padding-top: 0.85rem;
+    }
+
+    .signin-modal-footer a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .signin-modal-footer a:hover {
+      text-decoration: underline;
     }
 
     /* =========================================================================
@@ -735,18 +979,182 @@
       to { opacity: 1; transform: scale(1); }
     }
 
+    /* =========================================================================
+       COMPREHENSIVE RESPONSIVE DESIGN & MOBILE OPTIMIZATIONS
+       ========================================================================= */
     @media (max-width: 768px) {
-      .form-grid-2, .form-grid-3, .address-map-block {
-        grid-template-columns: 1fr;
+      body {
+        overflow-x: hidden;
       }
+
+      .welcome-nav {
+        padding: 0.85rem 1.15rem;
+      }
+
+      .brand-logo {
+        width: 32px;
+        height: 32px;
+        font-size: 1.1rem;
+        border-radius: 8px;
+      }
+
+      .brand-title {
+        font-size: 1.05rem;
+      }
+
+      .btn-signin-nav {
+        padding: 0.42rem 0.85rem;
+        font-size: 0.82rem;
+        gap: 0.35rem;
+      }
+
+      .onboarding-container {
+        margin: 1.5rem auto 3rem auto;
+        padding: 0 1rem;
+      }
+
+      .hero-header {
+        margin-bottom: 1.5rem;
+      }
+
+      .hero-badge {
+        font-size: 0.76rem;
+        padding: 0.3rem 0.75rem;
+        margin-bottom: 0.75rem;
+      }
+
+      .hero-header h1 {
+        font-size: 1.7rem;
+        line-height: 1.25;
+      }
+
+      .hero-header p {
+        font-size: 0.92rem;
+        line-height: 1.45;
+        padding: 0 0.25rem;
+      }
+
+
       .setup-card {
-        padding: 1.5rem;
+        padding: 1.5rem 1.15rem;
+        border-radius: 16px;
       }
+
+      .form-section-title {
+        font-size: 0.98rem;
+        margin-bottom: 1rem;
+      }
+
+      .form-grid-2, 
+      .form-grid-3, 
+      .address-map-block {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+
+      /* 16px prevents iOS Safari automatic zoom on inputs */
+      .form-control {
+        font-size: 16px;
+        padding: 0.75rem 0.85rem;
+      }
+
+      .mini-map-box {
+        height: 200px;
+        border-radius: 10px;
+      }
+
+      .gps-coords-display {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.3rem;
+        padding: 0.5rem 0.65rem;
+      }
+
+      .dataset-upload-zone {
+        padding: 1.35rem 1rem;
+      }
+
+      .upload-icon {
+        font-size: 1.9rem;
+      }
+
+      .template-helpers {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.6rem;
+        font-size: 0.78rem;
+      }
+
+      .btn-launch {
+        padding: 0.95rem 1.25rem;
+        font-size: 0.98rem;
+        max-width: 100%;
+      }
+
       .summary-metrics-grid {
         grid-template-columns: 1fr;
+        gap: 0.5rem;
       }
+
+      .pipeline-modal-card {
+        padding: 1.5rem 1.15rem;
+        border-radius: 16px;
+        max-height: 92vh;
+        overflow-y: auto;
+      }
+
+      .pipeline-step-item {
+        font-size: 0.8rem;
+        padding: 0.35rem 0.5rem;
+      }
+
+      .signin-modal-card {
+        padding: 1.75rem 1.25rem;
+        border-radius: 16px;
+        max-height: 92vh;
+        overflow-y: auto;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .welcome-nav {
+        padding: 0.75rem 0.85rem;
+      }
+
+      .brand-tag {
+        display: none; /* Hide enterprise badge on small mobile to fit brand title cleanly */
+      }
+
+      .brand-title {
+        font-size: 0.94rem;
+      }
+
+      .btn-signin-nav {
+        padding: 0.38rem 0.72rem;
+        font-size: 0.78rem;
+        gap: 0.25rem;
+      }
+
       .hero-header h1 {
-        font-size: 1.85rem;
+        font-size: 1.42rem;
+      }
+
+      .setup-card {
+        padding: 1.25rem 0.85rem;
+      }
+
+      .btn-launch {
+        font-size: 0.92rem;
+        padding: 0.85rem 1rem;
+      }
+
+      .address-input-row {
+        gap: 0.35rem;
+      }
+
+      .btn-locate-address {
+        padding: 0 0.65rem;
+        font-size: 0.76rem;
       }
     }
   </style>
@@ -760,7 +1168,10 @@
       <span class="brand-tag">Enterprise ML</span>
     </a>
     <div class="nav-actions">
-      <a href="/ui" id="nav-dashboard-link">Go to Dashboard &rarr;</a>
+      <button type="button" class="btn-signin-nav" id="btn-open-signin" title="Sign In with Hotel, Email & Password">
+        <span class="btn-signin-icon">&#128273;</span>
+        <span>Sign In</span>
+      </button>
     </div>
   </header>
 
@@ -769,22 +1180,6 @@
       <div class="hero-badge">&#127976; First-Time Merchant Onboarding</div>
       <h1>Welcome! Setup Your <span>Hotel & Restaurant</span> Profile</h1>
       <p>Configure your restaurant location, kitchen prep timings, and optionally upload your past delivery records to train a custom Scikit-Learn ML model tailored specifically for your hotel.</p>
-    </div>
-
-    <!-- Existing Account Banner (Shown when a hotel account already exists) -->
-    <div id="existing-account-banner" class="hidden" style="background: rgba(16, 185, 129, 0.12); border: 1.5px solid rgba(16, 185, 129, 0.35); color: #ecfdf5; padding: 1.1rem 1.4rem; border-radius: var(--radius-md); margin-bottom: 2rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.15);">
-      <div style="display:flex; align-items:center; gap:0.85rem;">
-        <span style="font-size:1.8rem; line-height: 1;">&#9989;</span>
-        <div>
-          <div style="font-weight:700; color:#34d399; font-size:1.02rem;">Active Hotel Account Configured</div>
-          <div style="font-size:0.88rem; color:#a7f3d0; margin-top:0.2rem;">
-            Account already exists for <strong id="existing-hotel-name" style="color:#ffffff;">Your Hotel</strong>. You can launch your live dashboard or update details below.
-          </div>
-        </div>
-      </div>
-      <a href="/ui" style="background:#059669; color:#ffffff; padding:0.65rem 1.25rem; border-radius:var(--radius-sm); text-decoration:none; font-weight:700; font-size:0.92rem; display:inline-flex; align-items:center; gap:0.4rem; transition: background 0.2s ease; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);">
-        <span>Launch Dashboard</span> &rarr;
-      </a>
     </div>
 
     <!-- Error Banner -->
@@ -1163,6 +1558,99 @@
   </div>
 
   <!-- =========================================================================
+       HOTEL SIGN IN MODAL (Hotel Name, Email & Password)
+       ========================================================================= -->
+  <div id="signin-modal" class="signin-modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="signin-heading">
+    <div class="signin-modal-card">
+      <button type="button" class="signin-modal-close" id="btn-close-signin" aria-label="Close modal">&times;</button>
+      
+      <div class="signin-header">
+        <div class="signin-icon-pill">&#128273;</div>
+        <h2 id="signin-heading">Hotel Sign In</h2>
+        <p>Sign in with your registered Hotel Name, Email, and Password to launch your dashboard.</p>
+      </div>
+
+      <!-- Sign In Error Banner -->
+      <div id="signin-error-banner" class="signin-alert-banner signin-alert-error hidden">
+        <span>&#9888;</span>
+        <span id="signin-error-text">Invalid hotel credentials.</span>
+      </div>
+
+      <!-- Sign In Success Banner -->
+      <div id="signin-success-banner" class="signin-alert-banner signin-alert-success hidden">
+        <span>&#10004;</span>
+        <span id="signin-success-text">Authenticated successfully! Redirecting...</span>
+      </div>
+
+      <form id="signin-form" onsubmit="return false;" novalidate class="signin-form">
+        <!-- Hotel / Restaurant Name -->
+        <div class="form-group">
+          <label class="form-label" for="signin-hotel-name">
+            <span>Hotel / Restaurant Name <span class="req">*</span></span>
+          </label>
+          <input 
+            type="text" 
+            id="signin-hotel-name" 
+            name="hotel_name" 
+            class="form-control" 
+            placeholder="e.g. Bella Vista Trattoria" 
+            required 
+            autocomplete="organization"
+          />
+          <div id="signin-detected-chip" class="signin-detected-badge hidden" title="Click to fill detected hotel profile">
+            <span>&#127976; Detected: <strong id="detected-hotel-label">Hotel</strong></span>
+            <span style="text-decoration: underline; font-size: 0.74rem;">Click to Autofill &rarr;</span>
+          </div>
+        </div>
+
+        <!-- Contact Email -->
+        <div class="form-group">
+          <label class="form-label" for="signin-email">
+            <span>Owner / Manager Email <span class="req">*</span></span>
+          </label>
+          <input 
+            type="email" 
+            id="signin-email" 
+            name="email" 
+            class="form-control" 
+            placeholder="e.g. manager@bellavista.com" 
+            required 
+            autocomplete="email"
+          />
+        </div>
+
+        <!-- Password -->
+        <div class="form-group">
+          <label class="form-label" for="signin-password">
+            <span>Account Password <span class="req">*</span></span>
+          </label>
+          <div class="password-wrap">
+            <input 
+              type="password" 
+              id="signin-password" 
+              name="password" 
+              class="form-control" 
+              placeholder="Enter your account password" 
+              required 
+              autocomplete="current-password"
+            />
+            <button type="button" class="password-toggle" id="toggle-signin-pw" title="Show/Hide Password">&#128065;</button>
+          </div>
+        </div>
+
+        <button type="submit" id="btn-submit-signin" class="btn-signin-submit">
+          <span>&#128273; Sign In to Dashboard &rarr;</span>
+        </button>
+      </form>
+
+      <div class="signin-modal-footer">
+        Don't have a hotel account yet? 
+        <a href="#onboarding-form" id="link-create-profile">Setup Profile Below &darr;</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
        TRAINING PIPELINE LOADING MODAL (Live Step Animation)
        ========================================================================= -->
   <div id="pipeline-modal" class="pipeline-modal-backdrop hidden">
@@ -1254,23 +1742,185 @@
   <!-- JavaScript Logic -->
   <script>
     document.addEventListener("DOMContentLoaded", () => {
-      // 0. Check if an active account is already registered
+      // Elements for Hotel Sign In Modal
+      const signinModal = document.getElementById("signin-modal");
+      const btnOpenSignin = document.getElementById("btn-open-signin");
+      const btnCloseSignin = document.getElementById("btn-close-signin");
+      const signinForm = document.getElementById("signin-form");
+      const signinHotelInput = document.getElementById("signin-hotel-name");
+      const signinEmailInput = document.getElementById("signin-email");
+      const signinPasswordInput = document.getElementById("signin-password");
+      const toggleSigninPw = document.getElementById("toggle-signin-pw");
+      const btnSubmitSignin = document.getElementById("btn-submit-signin");
+      const signinErrorBanner = document.getElementById("signin-error-banner");
+      const signinErrorText = document.getElementById("signin-error-text");
+      const signinSuccessBanner = document.getElementById("signin-success-banner");
+      const signinSuccessText = document.getElementById("signin-success-text");
+      const signinDetectedChip = document.getElementById("signin-detected-chip");
+      const detectedHotelLabel = document.getElementById("detected-hotel-label");
+      const linkCreateProfile = document.getElementById("link-create-profile");
+
+      function openSigninModal() {
+        if (!signinModal) return;
+        signinModal.classList.remove("hidden");
+        document.body.style.overflow = "hidden";
+        if (signinErrorBanner) signinErrorBanner.classList.add("hidden");
+        if (signinSuccessBanner) signinSuccessBanner.classList.add("hidden");
+        if (signinHotelInput && !signinHotelInput.value) {
+          signinHotelInput.focus();
+        } else if (signinPasswordInput) {
+          signinPasswordInput.focus();
+        }
+      }
+
+      function closeSigninModal() {
+        if (!signinModal) return;
+        signinModal.classList.add("hidden");
+        document.body.style.overflow = "";
+      }
+
+      function showSigninError(msg) {
+        if (signinErrorText) signinErrorText.textContent = msg;
+        if (signinErrorBanner) signinErrorBanner.classList.remove("hidden");
+        if (signinSuccessBanner) signinSuccessBanner.classList.add("hidden");
+      }
+
+      function showSigninSuccess(msg) {
+        if (signinSuccessText) signinSuccessText.textContent = msg;
+        if (signinSuccessBanner) signinSuccessBanner.classList.remove("hidden");
+        if (signinErrorBanner) signinErrorBanner.classList.add("hidden");
+      }
+
+      if (btnOpenSignin) {
+        btnOpenSignin.addEventListener("click", openSigninModal);
+      }
+      if (btnCloseSignin) {
+        btnCloseSignin.addEventListener("click", closeSigninModal);
+      }
+      if (signinModal) {
+        signinModal.addEventListener("click", (e) => {
+          if (e.target === signinModal) closeSigninModal();
+        });
+      }
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && signinModal && !signinModal.classList.contains("hidden")) {
+          closeSigninModal();
+        }
+      });
+
+      if (toggleSigninPw && signinPasswordInput) {
+        toggleSigninPw.addEventListener("click", () => {
+          signinPasswordInput.type = signinPasswordInput.type === "password" ? "text" : "password";
+        });
+      }
+
+      if (linkCreateProfile) {
+        linkCreateProfile.addEventListener("click", (e) => {
+          e.preventDefault();
+          closeSigninModal();
+          const target = document.getElementById("hotel-name") || document.getElementById("onboarding-form");
+          if (target) {
+            target.scrollIntoView({ behavior: "smooth", block: "center" });
+            if (target.focus) target.focus();
+          }
+        });
+      }
+
+      // Handle Sign In submission
+      if (signinForm) {
+        signinForm.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          if (signinErrorBanner) signinErrorBanner.classList.add("hidden");
+          if (signinSuccessBanner) signinSuccessBanner.classList.add("hidden");
+
+          const hotelName = signinHotelInput ? signinHotelInput.value.trim() : "";
+          const email = signinEmailInput ? signinEmailInput.value.trim() : "";
+          const password = signinPasswordInput ? signinPasswordInput.value : "";
+
+          if (!hotelName) {
+            showSigninError("Please enter your Hotel / Restaurant Name.");
+            if (signinHotelInput) signinHotelInput.focus();
+            return;
+          }
+          if (!email || !email.includes("@")) {
+            showSigninError("Please enter your registered manager email.");
+            if (signinEmailInput) signinEmailInput.focus();
+            return;
+          }
+          if (!password) {
+            showSigninError("Please enter your account password.");
+            if (signinPasswordInput) signinPasswordInput.focus();
+            return;
+          }
+
+          if (btnSubmitSignin) {
+            btnSubmitSignin.disabled = true;
+            btnSubmitSignin.innerHTML = "<span>⏳ Verifying Credentials...</span>";
+          }
+
+          try {
+            const resp = await fetch("/api/hotel-login", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                hotel_name: hotelName,
+                email: email,
+                password: password,
+              }),
+            });
+
+            if (!resp.ok) {
+              const errData = await resp.json().catch(() => ({}));
+              throw new Error(errData.detail || "Authentication failed. Please verify credentials.");
+            }
+
+            const data = await resp.json();
+            showSigninSuccess(`Welcome back, ${hotelName}! Redirecting to dashboard...`);
+            if (btnSubmitSignin) {
+              btnSubmitSignin.innerHTML = "<span>&#10004; Verified! Redirecting...</span>";
+              btnSubmitSignin.style.background = "#059669";
+            }
+
+            // Save active hotel id and name in localStorage for rapid access
+            try {
+              if (data.profile && data.profile.id) {
+                localStorage.setItem("dtml_active_hotel_id", String(data.profile.id));
+              }
+              localStorage.setItem("dtml_active_hotel", hotelName);
+            } catch (err) {}
+
+            setTimeout(() => {
+              window.location.href = data.redirect_url || "/ui";
+            }, 850);
+
+          } catch (err) {
+            showSigninError(err.message || "Sign in failed. Please check your credentials.");
+            if (btnSubmitSignin) {
+              btnSubmitSignin.disabled = false;
+              btnSubmitSignin.innerHTML = "<span>&#128273; Sign In to Dashboard &rarr;</span>";
+              btnSubmitSignin.style.background = "";
+            }
+          }
+        });
+      }
+
+      // 0. Check if an active account is already registered to offer sign-in helper
       fetch("/api/hotel-profile")
         .then(res => res.json())
         .then(data => {
           if (data && data.is_configured && data.profile) {
             const p = data.profile;
-            const banner = document.getElementById("existing-account-banner");
-            const hotelNameDisplay = document.getElementById("existing-hotel-name");
-            const navDashboardLink = document.getElementById("nav-dashboard-link");
-            if (banner) banner.classList.remove("hidden");
-            if (hotelNameDisplay) hotelNameDisplay.textContent = p.hotel_name;
-            if (navDashboardLink) {
-              navDashboardLink.innerHTML = `&#127976; <strong>${p.hotel_name}</strong> &bull; Open Dashboard &rarr;`;
-              navDashboardLink.style.background = "rgba(99, 102, 241, 0.25)";
-              navDashboardLink.style.border = "1px solid rgba(165, 180, 252, 0.4)";
-              navDashboardLink.style.padding = "0.4rem 0.85rem";
-              navDashboardLink.style.borderRadius = "8px";
+            // Pre-fill Sign In modal hints with detected profile
+            if (p.hotel_name) {
+              if (detectedHotelLabel) detectedHotelLabel.textContent = p.hotel_name;
+              if (signinDetectedChip) {
+                signinDetectedChip.classList.remove("hidden");
+                signinDetectedChip.addEventListener("click", () => {
+                  if (signinHotelInput) signinHotelInput.value = p.hotel_name;
+                  if (signinEmailInput && p.contact_email) signinEmailInput.value = p.contact_email;
+                  if (signinPasswordInput) signinPasswordInput.focus();
+                });
+              }
             }
           }
         })
@@ -1730,6 +2380,14 @@
 
           modalSuccessBox.classList.remove("hidden");
           btnToDashboard.classList.remove("hidden");
+
+          // Store active hotel ID in localStorage for isolated session
+          if (result.profile && result.profile.id) {
+            try {
+              localStorage.setItem("dtml_active_hotel_id", String(result.profile.id));
+              localStorage.setItem("dtml_active_hotel", result.profile.hotel_name || hotelName);
+            } catch (err) {}
+          }
 
           // Auto redirect in 3.5 seconds or on button click
           const redirectTimer = setTimeout(() => {

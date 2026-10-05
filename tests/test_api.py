@@ -376,6 +376,180 @@ def test_18_visitor_routing_welcome_vs_ui(client: TestClient):
     assert "Delivery Time Predictor" in guest_ui.text
 
 
+def test_19_hotel_login_endpoint(client: TestClient):
+    """Test 19: Verify /api/hotel-login authenticates valid hotel credentials and rejects invalid inputs."""
+    # Ensure hotel account exists with known credentials
+    profile_payload = {
+        "hotel_name": "Trattoria Roma",
+        "contact_email": "roma@example.com",
+        "branch_or_address": "Via Condotti 12",
+        "password": "SecurePassword123!",
+        "default_prep_time_min": 15.0,
+        "default_vehicle_type": "Scooter",
+    }
+    client.post("/api/hotel-profile", json=profile_payload)
+
+    # 1. Successful login
+    login_resp = client.post("/api/hotel-login", json={
+        "hotel_name": "Trattoria Roma",
+        "email": "roma@example.com",
+        "password": "SecurePassword123!",
+    })
+    assert login_resp.status_code == 200
+    login_data = login_resp.json()
+    assert login_data["status"] == "success"
+    assert login_data["redirect_url"] == "/ui"
+    assert login_data["profile"]["hotel_name"] == "Trattoria Roma"
+
+    # 2. Case-insensitivity test for hotel and email
+    case_resp = client.post("/api/hotel-login", json={
+        "hotel_name": "trattoria roma",
+        "email": "ROMA@EXAMPLE.COM",
+        "password": "SecurePassword123!",
+    })
+    assert case_resp.status_code == 200
+
+    # 3. Wrong password
+    bad_pw = client.post("/api/hotel-login", json={
+        "hotel_name": "Trattoria Roma",
+        "email": "roma@example.com",
+        "password": "WrongPassword!",
+    })
+    assert bad_pw.status_code == 401
+    assert "password" in bad_pw.json()["detail"].lower()
+
+    # 4. Wrong email
+    bad_email = client.post("/api/hotel-login", json={
+        "hotel_name": "Trattoria Roma",
+        "email": "unknown@example.com",
+        "password": "SecurePassword123!",
+    })
+    assert bad_email.status_code == 401
+    assert "email" in bad_email.json()["detail"].lower()
+
+    # 5. Wrong hotel name
+    bad_hotel = client.post("/api/hotel-login", json={
+        "hotel_name": "Nonexistent Bistro",
+        "email": "roma@example.com",
+        "password": "SecurePassword123!",
+    })
+    assert bad_hotel.status_code == 401
+    assert "hotel" in bad_hotel.json()["detail"].lower()
+
+
+def test_20_multi_hotel_profile_and_data_separation(client: TestClient):
+    """Test 20: Verify creating multiple hotel accounts creates separated profiles, isolated rider fleets, and fresh order histories."""
+    # 1. Register Hotel Alpha
+    alpha_resp = client.post("/api/register-hotel", data={
+        "hotel_name": "Alpha Karachi Palace",
+        "email": "manager@alphapalace.com",
+        "password": "Password123!",
+        "address": "Clifton Block 2",
+        "city_preset": "Pakistan",
+        "latitude": 24.8150,
+        "longitude": 67.0300,
+        "default_prep_time_min": 18.0,
+        "default_vehicle_type": "Scooter",
+    })
+    assert alpha_resp.status_code == 200, f"Registration failed: {alpha_resp.text}"
+    alpha_data = alpha_resp.json()
+    alpha_profile = alpha_data["profile"]
+    alpha_id = alpha_profile["id"]
+    assert alpha_profile["hotel_name"] == "Alpha Karachi Palace"
+
+    # 2. Verify Hotel Alpha has its own 4 dedicated riders located near its coordinates
+    alpha_riders_resp = client.get(f"/api/riders?hotel_id={alpha_id}")
+    assert alpha_riders_resp.status_code == 200
+    alpha_riders = alpha_riders_resp.json()["riders"]
+    assert len(alpha_riders) == 4
+    for r in alpha_riders:
+        assert r["hotel_id"] == alpha_id
+        assert abs(r["current_lat"] - 24.8150) < 0.05
+
+    # 3. Log a prediction order for Hotel Alpha
+    pred_payload = {
+        "Distance_km": 5.0,
+        "Weather": "Clear",
+        "Traffic_Level": "Low",
+        "Time_of_Day": "Morning",
+        "Vehicle_Type": "Scooter",
+        "Preparation_Time_min": 15.0,
+        "Courier_Experience_yrs": 4.0,
+        "Destination_Address": "Sea View Apt 4",
+        "Hotel_ID": alpha_id,
+    }
+    pred_resp = client.post("/predict", json=pred_payload, headers={"X-Hotel-ID": str(alpha_id)})
+    assert pred_resp.status_code == 200
+
+    # Verify Hotel Alpha has 1 order in history
+    alpha_hist = client.get(f"/api/order-history?hotel_id={alpha_id}").json()
+    assert alpha_hist["total"] == 1
+    assert len(alpha_hist["orders"]) == 1
+
+    # 4. Register a second, completely separate hotel (Hotel Beta in London)
+    beta_resp = client.post("/api/register-hotel", data={
+        "hotel_name": "Beta London Diner",
+        "email": "owner@betadiner.co.uk",
+        "password": "Password456!",
+        "address": "45 Baker Street",
+        "city_preset": "United Kingdom",
+        "latitude": 51.5200,
+        "longitude": -0.1560,
+        "default_prep_time_min": 12.0,
+        "default_vehicle_type": "Bike",
+    })
+    assert beta_resp.status_code == 200
+    beta_data = beta_resp.json()
+    beta_profile = beta_data["profile"]
+    beta_id = beta_profile["id"]
+    assert beta_id != alpha_id, "Hotel Beta should receive a unique separated ID"
+    assert beta_profile["hotel_name"] == "Beta London Diner"
+
+    # 5. Verify Hotel Beta has a FRESH profile: its own riders near London and EMPTY (0) order history
+    beta_riders_resp = client.get(f"/api/riders?hotel_id={beta_id}")
+    assert beta_riders_resp.status_code == 200
+    beta_riders = beta_riders_resp.json()["riders"]
+    assert len(beta_riders) == 4
+    for r in beta_riders:
+        assert r["hotel_id"] == beta_id
+        assert abs(r["current_lat"] - 51.5200) < 0.05
+
+    # Beta's order history is fresh and empty!
+    beta_hist = client.get(f"/api/order-history?hotel_id={beta_id}").json()
+    assert beta_hist["total"] == 0
+    assert len(beta_hist["orders"]) == 0
+
+    # 6. Verify Hotel Alpha's history is still 1 and isolated
+    alpha_hist_check = client.get(f"/api/order-history?hotel_id={alpha_id}").json()
+    assert alpha_hist_check["total"] == 1
+
+    # 7. Test Sign In switches to the selected hotel account cleanly
+    login_alpha = client.post("/api/hotel-login", json={
+        "hotel_name": "Alpha Karachi Palace",
+        "email": "manager@alphapalace.com",
+        "password": "Password123!",
+    })
+    assert login_alpha.status_code == 200
+    assert login_alpha.json()["profile"]["id"] == alpha_id
+
+    # Active profile retrieval now reflects Alpha
+    active_profile = client.get("/api/hotel-profile").json()
+    assert active_profile["profile"]["hotel_name"] == "Alpha Karachi Palace"
+
+    # 8. Test Sign In to Beta
+    login_beta = client.post("/api/hotel-login", json={
+        "hotel_name": "Beta London Diner",
+        "email": "owner@betadiner.co.uk",
+        "password": "Password456!",
+    })
+    assert login_beta.status_code == 200
+    assert login_beta.json()["profile"]["id"] == beta_id
+
+    active_profile_b = client.get("/api/hotel-profile").json()
+    assert active_profile_b["profile"]["hotel_name"] == "Beta London Diner"
+
+
+
 
 
 

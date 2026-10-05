@@ -69,6 +69,11 @@ class DeliveryPredictionRequest(BaseModel):
         description="Customer delivery destination longitude (optional).",
         examples=[-73.9857],
     )
+    Hotel_ID: Optional[int] = Field(
+        default=None,
+        description="Hotel Account ID scoping the prediction log (optional).",
+        examples=[1],
+    )
 
     model_config = {
         "json_schema_extra": {
@@ -124,6 +129,7 @@ class HotelProfilePayload(BaseModel):
     latitude: Optional[float] = Field(default=40.7306, ge=-90.0, le=90.0, examples=[40.7306])
     longitude: Optional[float] = Field(default=-73.9866, ge=-180.0, le=180.0, examples=[-73.9866])
     city_preset: Optional[str] = Field(default="New York", max_length=60, examples=["New York"])
+    password: Optional[str] = Field(default=None, max_length=128, description="Optional account password")
 
 
 class HotelProfileResponse(BaseModel):
@@ -131,6 +137,15 @@ class HotelProfileResponse(BaseModel):
 
     is_configured: bool
     profile: Optional[Dict[str, Any]] = None
+
+
+class HotelLoginPayload(BaseModel):
+    """Schema for logging into a hotel profile."""
+
+    hotel_name: str = Field(..., min_length=1, max_length=120, description="Hotel or Restaurant Name", examples=["Bella Vista Trattoria"])
+    email: str = Field(..., min_length=3, max_length=100, description="Owner / Manager Email", examples=["manager@bellavista.com"])
+    password: str = Field(..., min_length=1, max_length=128, description="Account Password", examples=["secret123"])
+
 
 
 class RouteCalculationResponse(BaseModel):
@@ -149,6 +164,7 @@ class RouteCalculationResponse(BaseModel):
 class RiderCreatePayload(BaseModel):
     """Schema for registering a new delivery rider in the fleet."""
 
+    hotel_id: Optional[int] = Field(default=None, description="Associated Hotel ID.")
     rider_name: Optional[str] = Field(default=None, min_length=2, max_length=100, description="Full name of the courier.", examples=["Tariq Khan"])
     name: Optional[str] = Field(default=None, min_length=2, max_length=100, description="Alias for rider name.")
     phone: str = Field(..., min_length=5, max_length=30, description="Contact phone or mobile number.", examples=["+92 300 1234567"])
@@ -161,11 +177,17 @@ class RiderCreatePayload(BaseModel):
     lat: Optional[float] = Field(default=None, ge=-90.0, le=90.0, description="Alias for latitude.")
     lng: Optional[float] = Field(default=None, ge=-180.0, le=180.0, description="Alias for longitude.")
     current_address: Optional[str] = Field(default="", max_length=200, description="Current landmark or street location.", examples=["Defence View, Karachi"])
-    address: Optional[str] = Field(default=None, max_length=200, description="Alias for address.")
+    email: Optional[str] = Field(default=None, max_length=120, description="Courier email address for automated dispatch notifications.", examples=["tariq.khan@deliveryhub.com"])
+    rider_email: Optional[str] = Field(default=None, max_length=120, description="Alias for email.")
 
     def model_post_init(self, __context: Any) -> None:
         if not self.rider_name and self.name:
             self.rider_name = self.name
+        if not self.email and self.rider_email:
+            self.email = self.rider_email
+        if not self.email and self.rider_name:
+            clean_name = self.rider_name.lower().replace(" ", ".")
+            self.email = f"{clean_name}@deliveryhub.com"
         if self.current_lat is None and self.lat is not None:
             self.current_lat = self.lat
         if self.current_lng is None and self.lng is not None:
@@ -209,4 +231,68 @@ class RiderListResponse(BaseModel):
     total: int
     stats: Dict[str, Any]
     riders: List[Dict[str, Any]]
+
+
+# ==============================================================================
+# Automated Dispatch Engine & Cascading Pipeline Schemas
+# ==============================================================================
+
+class DispatchCreatePayload(BaseModel):
+    """Schema for initiating an automated cascading delivery dispatch."""
+
+    client_name: str = Field(..., min_length=1, max_length=120, description="Customer recipient name.", examples=["Sarah Connor"])
+    client_phone: str = Field(..., min_length=5, max_length=30, description="Customer contact phone number.", examples=["+1 (555) 987-6543"])
+    client_address: str = Field(..., min_length=3, max_length=250, description="Customer dropoff street address.", examples=["350 5th Ave, Floor 14"])
+    tracking_id: Optional[str] = Field(default=None, description="System-generated unique tracking ID.", examples=["TRK-A7B8C9"])
+    hotel_id: Optional[int] = Field(default=None, description="Origin hotel ID.")
+    dest_lat: Optional[float] = Field(default=None, ge=-90.0, le=90.0, description="Destination latitude.")
+    dest_lng: Optional[float] = Field(default=None, ge=-180.0, le=180.0, description="Destination longitude.")
+    vehicle_type: Optional[VehicleType] = Field(default=None, description="Vehicle transport type.")
+    prep_time_min: Optional[float] = Field(default=None, ge=0.0, le=180.0, description="Order preparation time.")
+    traffic_level: Optional[TrafficLevelType] = Field(default=None, description="Current traffic level.")
+    items: Optional[List["KitchenItemInput"]] = Field(default=None, description="Food and beverage items ordered for kitchen preparation.")
+
+
+class DispatchCompletePayload(BaseModel):
+    """Schema for completing a delivery and recording performance."""
+
+    actual_duration_min: Optional[float] = Field(default=None, ge=1.0, le=300.0, description="Actual delivery duration in minutes.")
+    actual_delivery_minutes: Optional[float] = Field(default=None, ge=1.0, le=300.0, description="Alias for actual delivery duration in minutes.")
+
+    def get_actual_duration(self) -> Optional[float]:
+        return self.actual_duration_min if self.actual_duration_min is not None else self.actual_delivery_minutes
+
+
+# ==============================================================================
+# Kitchen Management & Thermal Printing Schemas
+# ==============================================================================
+
+class KitchenItemInput(BaseModel):
+    """Schema for an individual food or beverage dish ordered for kitchen preparation."""
+
+    item_name: str = Field(..., min_length=1, max_length=150, description="Name of the food or beverage dish.", examples=["Spicy Chicken Burger"])
+    quantity: int = Field(default=1, ge=1, le=100, description="Quantity of this item ordered.", examples=[2])
+    special_instructions: Optional[str] = Field(default=None, max_length=300, description="Customizations, e.g. spicy level, no onions, extra sauce.", examples=["Extra spicy, no onions"])
+    unit_price: Optional[float] = Field(default=0.0, ge=0.0, description="Item unit price (used for delivery bill calculation, excluded from KOT).", examples=[12.50])
+
+
+class KitchenStatusUpdatePayload(BaseModel):
+    """Schema for updating preparation status of a kitchen queue item."""
+
+    item_id: Optional[int] = Field(default=None, description="Database ID of the specific kitchen queue item.")
+    tracking_id: Optional[str] = Field(default=None, description="Optional tracking ID to transition all items for an order.")
+    status: str = Field(..., description="Target status: Pending, Preparing, Ready, Completed.", examples=["Preparing"])
+
+
+class KitchenManualOrderPayload(BaseModel):
+    """Schema for creating a kitchen queue order directly."""
+
+    hotel_id: Optional[int] = Field(default=None, description="Associated Hotel ID.")
+    order_id: Optional[str] = Field(default=None, description="Order identifier.")
+    tracking_id: Optional[str] = Field(default=None, description="Unique delivery tracking ID.")
+    client_name: Optional[str] = Field(default="Valued Customer", description="Client or guest name.")
+    client_phone: Optional[str] = Field(default="N/A", description="Client phone number.")
+    client_address: Optional[str] = Field(default="Local Delivery Hub", description="Delivery address.")
+    items: List[KitchenItemInput] = Field(..., min_length=1, description="List of food/beverage items to prepare.")
+
 

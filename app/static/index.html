@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Delivery Time Prediction & Merchant Intelligence</title>
-  <link rel="stylesheet" href="style.css?v=18" />
+  <link rel="stylesheet" href="style.css?v=23" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -13,11 +13,17 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <style>
     /* Top-Navbar & Modern Responsive Layout */
+    html {
+      overflow-x: hidden !important;
+      max-width: 100vw;
+    }
     body {
       margin: 0 !important;
       padding: 0 0 3rem 0 !important;
       display: block !important;
       background-color: var(--bg-color) !important;
+      overflow-x: hidden !important;
+      max-width: 100vw;
     }
     .top-navbar {
       position: sticky;
@@ -28,6 +34,8 @@
       border-bottom: 1px solid var(--border-color);
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
       width: 100%;
+      max-width: 100vw;
+      box-sizing: border-box;
       transition: opacity 0.2s ease, visibility 0.2s ease;
     }
     /* Hide top navbar when map modal is expanded */
@@ -36,23 +44,27 @@
       display: none !important;
     }
     .navbar-container {
-      max-width: 1140px;
-      margin: 0 auto;
-      padding: 0.65rem 1.25rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
+      width: 100% !important;
+      max-width: 100% !important;
+      margin: 0 !important;
+      padding: 0.65rem 2rem !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      gap: 1rem !important;
+      box-sizing: border-box !important;
+      position: relative !important;
     }
     .navbar-brand {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
-      cursor: default;
+      gap: 0.55rem;
+      cursor: pointer;
       user-select: none;
+      flex-shrink: 0;
     }
     .navbar-brand .brand-icon {
-      font-size: 1.4rem;
+      font-size: 1.45rem;
       line-height: 1;
     }
     .navbar-brand .brand-title {
@@ -60,88 +72,385 @@
       font-weight: 700;
       color: var(--text-main);
       letter-spacing: -0.02em;
+      white-space: nowrap;
     }
     .navbar-brand .brand-badge {
       font-size: 0.68rem;
       font-weight: 600;
       color: var(--primary);
       background: var(--primary-light);
-      padding: 0.15rem 0.45rem;
+      padding: 0.18rem 0.5rem;
       border-radius: 6px;
-      margin-left: 0.25rem;
-    }
-    .navbar-hotel-chip {
-      display: flex;
-      align-items: center;
-      margin-left: 0.5rem;
-    }
-    .hotel-chip-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.45rem;
-      padding: 0.35rem 0.75rem;
-      background: #f8fafc;
-      border: 1px solid var(--border-color);
-      border-radius: 9999px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: var(--text-main);
-      text-decoration: none;
-      transition: all 0.2s ease;
+      margin-left: 0.2rem;
       white-space: nowrap;
     }
-    .hotel-chip-link:hover {
-      background: #eef2ff;
+    .top-navbar .nav-tabs {
+      display: inline-flex;
+      background: #e2e8f0;
+      padding: 0.3rem;
+      border-radius: 10px;
+      gap: 0.35rem;
+      margin: 0 auto;
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+      flex-shrink: 1;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    .top-navbar .nav-tabs::-webkit-scrollbar {
+      display: none;
+    }
+
+    /* Navbar Hotel Profile Hamburger Menu */
+    .navbar-hotel-menu-wrap {
+      position: relative;
+      margin-left: auto;
+      flex-shrink: 0;
+      z-index: 1010;
+    }
+    .btn-navbar-hamburger {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
+      padding: 0.42rem 0.9rem;
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 9999px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-main);
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      white-space: nowrap;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      user-select: none;
+      font-family: inherit;
+      outline: none;
+    }
+    .btn-navbar-hamburger:hover,
+    .btn-navbar-hamburger.active {
+      background: #f8fafc;
       border-color: var(--primary);
       color: var(--primary);
+      box-shadow: 0 4px 14px rgba(79, 70, 229, 0.14);
+      transform: translateY(-1px);
     }
-    .hotel-chip-badge {
+    /* Animated Hamburger 3-Bars */
+    .hamburger-icon-box {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      width: 16px;
+      height: 12px;
+      cursor: pointer;
+      position: relative;
+    }
+    .hamburger-icon-box span {
+      display: block;
+      height: 2px;
+      width: 100%;
+      background: #475569;
+      border-radius: 2px;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      transform-origin: center;
+    }
+    .btn-navbar-hamburger:hover .hamburger-icon-box span,
+    .btn-navbar-hamburger.active .hamburger-icon-box span {
+      background: var(--primary);
+    }
+    .btn-navbar-hamburger.active .hamburger-icon-box span:nth-child(1) {
+      transform: translateY(5px) rotate(45deg);
+    }
+    .btn-navbar-hamburger.active .hamburger-icon-box span:nth-child(2) {
+      opacity: 0;
+      transform: scaleX(0);
+    }
+    .btn-navbar-hamburger.active .hamburger-icon-box span:nth-child(3) {
+      transform: translateY(-5px) rotate(-45deg);
+    }
+    .nav-hotel-avatar {
+      font-size: 1.05rem;
+      line-height: 1;
+    }
+    .nav-hotel-pill-text {
+      max-width: 140px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-weight: 600;
+      font-size: 0.82rem;
+      color: inherit;
+    }
+    .nav-chevron {
       font-size: 0.68rem;
-      background: #ecfdf5;
-      color: #047857;
-      padding: 0.15rem 0.45rem;
+      color: #64748b;
+      transition: transform 0.2s ease;
+      line-height: 1;
+    }
+    .btn-navbar-hamburger.active .nav-chevron {
+      transform: rotate(180deg);
+      color: var(--primary);
+    }
+
+    /* Floating Hotel Profile Dropdown Menu */
+    .hotel-profile-dropdown {
+      position: absolute;
+      top: calc(100% + 10px);
+      right: 0;
+      width: 340px;
+      max-width: calc(100vw - 1.5rem);
+      background: #ffffff;
+      border-radius: 16px;
+      border: 1px solid rgba(226, 232, 240, 0.95);
+      box-shadow: 0 20px 40px -10px rgba(15, 23, 42, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.04);
+      padding: 1.15rem;
+      box-sizing: border-box;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-8px) scale(0.97);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      pointer-events: none;
+      z-index: 1020;
+    }
+    .hotel-profile-dropdown.open {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0) scale(1);
+      pointer-events: auto;
+    }
+    /* Hotel Overview Card inside dropdown */
+    .dropdown-hotel-card {
+      background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+      border: 1px solid #e0e7ff;
+      border-radius: 12px;
+      padding: 0.9rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+    .dropdown-badge-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.4rem;
+    }
+    .dropdown-model-badge {
+      font-size: 0.68rem;
+      font-weight: 700;
+      background: #eef2ff;
+      color: #4338ca;
+      border: 1px solid #c7d2fe;
+      padding: 0.18rem 0.55rem;
+      border-radius: 9999px;
+      white-space: nowrap;
+    }
+    .dropdown-city-badge {
+      font-size: 0.68rem;
+      font-weight: 600;
+      background: #ffffff;
+      color: #475569;
+      border: 1px solid #e2e8f0;
+      padding: 0.18rem 0.5rem;
       border-radius: 6px;
-      border: 1px solid #a7f3d0;
+      white-space: nowrap;
+    }
+    .dropdown-hotel-name-title {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.02em;
+      line-height: 1.3;
+      word-break: break-word;
+    }
+    .dropdown-hotel-address {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.35rem;
+      font-size: 0.76rem;
+      color: #64748b;
+      line-height: 1.35;
+      word-break: break-word;
+    }
+    .dropdown-hotel-address .address-icon {
+      font-size: 0.82rem;
+      line-height: 1.2;
+      flex-shrink: 0;
+    }
+    .dropdown-operational-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin-top: 0.15rem;
+    }
+    .dropdown-operational-pills .op-pill {
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.18rem 0.5rem;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      color: #334155;
+    }
+
+    .dropdown-divider {
+      height: 1px;
+      background: #f1f5f9;
+      margin: 0.75rem 0;
+    }
+
+    .dropdown-menu-items {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .dropdown-item-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.55rem 0.7rem;
+      border-radius: 10px;
+      background: transparent;
+      border: none;
+      text-align: left;
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
+      width: 100%;
+      box-sizing: border-box;
+      transition: background 0.15s ease, transform 0.1s ease;
+      font-family: inherit;
+    }
+    .dropdown-item-btn:hover {
+      background: #f8fafc;
+      transform: translateX(2px);
+    }
+    .dropdown-item-icon {
+      font-size: 1.15rem;
+      width: 24px;
+      text-align: center;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+    .dropdown-item-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.1rem;
+      min-width: 0;
+    }
+    .dropdown-item-title {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #1e293b;
+      line-height: 1.25;
+    }
+    .dropdown-item-desc {
+      font-size: 0.7rem;
+      color: #64748b;
+      line-height: 1.2;
+    }
+
+    .dropdown-footer {
+      margin-top: 0.25rem;
+    }
+    .dropdown-logout-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      width: 100%;
+      padding: 0.62rem 1rem;
+      border-radius: 10px;
+      border: 1px solid #fecaca;
+      background: #fff5f5;
+      color: #dc2626;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+      box-sizing: border-box;
+    }
+    .dropdown-logout-btn:hover {
+      background: #fee2e2;
+      border-color: #fca5a5;
+      color: #b91c1c;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(239, 68, 68, 0.15);
+    }
+    .dropdown-logout-btn:active {
+      transform: scale(0.98);
     }
     .app-container {
       width: 100% !important;
-      max-width: 1140px !important;
-      margin: 1.5rem auto 0 auto !important;
-      padding: 0 1.25rem !important;
+      max-width: 1680px !important;
+      margin: 1.25rem auto 0 auto !important;
+      padding: 0 2.25rem !important;
+      box-sizing: border-box !important;
+    }
+    @media (min-width: 1800px) {
+      .app-container {
+        max-width: 1840px !important;
+        padding: 0 3rem !important;
+      }
     }
     .app-header {
-      text-align: center;
-      margin-bottom: 1.75rem !important;
+      text-align: left !important;
+      margin-bottom: 1.5rem !important;
+      padding: 0 0.25rem !important;
     }
     .app-header h1 {
-      font-size: 1.85rem !important;
+      font-size: 1.95rem !important;
+      font-weight: 800 !important;
+      letter-spacing: -0.025em !important;
       margin-bottom: 0.35rem !important;
+      color: #0f172a !important;
     }
     .app-header .subtitle {
+      font-size: 0.95rem !important;
+      color: #64748b !important;
       margin-bottom: 0 !important;
+      max-width: 900px !important;
+    }
+    .main-card {
+      width: 100% !important;
+      border-radius: 16px !important;
+      padding: 2.25rem 2.5rem !important;
+      box-sizing: border-box !important;
+      border: 1px solid var(--border-color) !important;
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05), 0 2px 6px -1px rgba(0, 0, 0, 0.03) !important;
     }
     .content-split {
       display: flex !important;
       flex-direction: row !important;
-      gap: 1.75rem !important;
+      gap: 2.5rem !important;
       align-items: flex-start !important;
+      width: 100% !important;
     }
     .left-col {
-      flex: 1 !important;
-      min-width: 320px !important;
+      flex: 0 0 540px !important;
+      max-width: 580px !important;
+      min-width: 420px !important;
     }
     .right-col {
-      flex: 1.15 !important;
-      min-width: 320px !important;
+      flex: 1 !important;
+      min-width: 480px !important;
       display: flex !important;
       flex-direction: column !important;
-      gap: 1.25rem !important;
+      gap: 1.35rem !important;
+    }
+    @media (min-width: 1540px) {
+      .left-col {
+        flex: 0 0 580px !important;
+        max-width: 620px !important;
+      }
     }
     .right-col .map-section-wrapper {
       margin-bottom: 0 !important;
+      width: 100% !important;
     }
     .right-col .map-container-box:not(.expanded-modal) {
-      height: 330px !important;
+      height: 440px !important;
+      border-radius: 14px !important;
     }
     .right-col .map-container-box.expanded-modal {
       position: fixed !important;
@@ -219,17 +528,21 @@
       .top-navbar .nav-tabs {
         display: none !important;
       }
-      .navbar-hotel-chip {
+      .navbar-hotel-menu-wrap {
         margin-left: 0 !important;
       }
-      .hotel-chip-link {
-        padding: 0.25rem 0.6rem !important;
+      .btn-navbar-hamburger {
+        padding: 0.32rem 0.65rem !important;
         font-size: 0.75rem !important;
-        border-radius: 9999px !important;
-        gap: 0.3rem !important;
+        gap: 0.4rem !important;
       }
-      .hotel-chip-badge {
-        display: none !important;
+      .nav-hotel-pill-text {
+        max-width: 95px !important;
+        font-size: 0.75rem !important;
+      }
+      .hotel-profile-dropdown {
+        width: 300px !important;
+        right: 0 !important;
       }
       .app-container {
         padding: 0 0.85rem !important;
@@ -307,13 +620,89 @@
         <button type="button" class="tab-btn" data-tab="riders-tab" id="tab-riders">
           <span class="tab-icon">&#128757;</span> Rider Fleet (<span id="riders-count-badge">0</span>)
         </button>
+        <button type="button" class="tab-btn" data-tab="dispatch-tab" id="tab-dispatch">
+          <span class="tab-icon">&#128230;</span> Automated Dispatch (<span id="dispatch-count-badge">0</span>)
+        </button>
       </div>
-      <div class="navbar-hotel-chip" id="navbar-hotel-chip">
-        <a href="/welcome" class="hotel-chip-link" title="Click to view/switch hotel profile or register new hotel">
-          <span class="hotel-chip-icon">&#127976;</span>
-          <span class="hotel-chip-name" id="navbar-hotel-name">Setup Hotel</span>
-          <span class="hotel-chip-badge" id="navbar-model-badge">&#9889; Production Model</span>
-        </a>
+      <!-- Hotel Profile Hamburger Menu -->
+      <div class="navbar-hotel-menu-wrap" id="navbar-hotel-menu-wrap">
+        <button type="button" class="btn-navbar-hamburger" id="btn-navbar-hamburger" aria-haspopup="true" aria-expanded="false" title="Hotel Profile & Actions Menu">
+          <div class="hamburger-icon-box">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+          <span class="nav-hotel-avatar">&#127976;</span>
+          <span class="nav-hotel-pill-text" id="navbar-hotel-pill-text">Hotel Profile</span>
+          <span class="nav-chevron">&#9662;</span>
+        </button>
+
+        <!-- Dropdown Menu -->
+        <div class="hotel-profile-dropdown" id="hotel-profile-dropdown" role="menu" aria-hidden="true">
+          <!-- Complete Hotel Overview Card -->
+          <div class="dropdown-hotel-card">
+            <div class="dropdown-badge-row">
+              <span class="dropdown-model-badge" id="dropdown-model-badge">&#9889; Production Model</span>
+              <span class="dropdown-city-badge" id="dropdown-city-badge">New York Hub</span>
+            </div>
+            <div class="dropdown-hotel-name-title" id="dropdown-hotel-name">Setup Hotel</div>
+            <div class="dropdown-hotel-address">
+              <span class="address-icon">&#128205;</span>
+              <span class="address-text" id="dropdown-hotel-address-text">Operational Dispatch Hub</span>
+            </div>
+            <div class="dropdown-operational-pills">
+              <span class="op-pill" id="dropdown-prep-pill">&#9201; 15 min prep</span>
+              <span class="op-pill" id="dropdown-vehicle-pill">&#128757; Scooter</span>
+            </div>
+          </div>
+
+          <div class="dropdown-divider"></div>
+
+          <!-- Actions -->
+          <div class="dropdown-menu-items">
+            <a href="/welcome" class="dropdown-item-btn" id="menu-btn-switch" role="menuitem">
+              <span class="dropdown-item-icon">&#8644;</span>
+              <div class="dropdown-item-info">
+                <span class="dropdown-item-title">Switch / Register Hotel</span>
+                <span class="dropdown-item-desc">Change active account or configure new branch</span>
+              </div>
+            </a>
+
+            <button type="button" class="dropdown-item-btn" id="menu-btn-retrain" role="menuitem">
+              <span class="dropdown-item-icon">&#128640;</span>
+              <div class="dropdown-item-info">
+                <span class="dropdown-item-title">Model Retraining Hub</span>
+                <span class="dropdown-item-desc">Train custom ML model on order logs</span>
+              </div>
+            </button>
+
+            <button type="button" class="dropdown-item-btn" id="menu-btn-riders" role="menuitem">
+              <span class="dropdown-item-icon">&#128757;</span>
+              <div class="dropdown-item-info">
+                <span class="dropdown-item-title">Courier Fleet Manager</span>
+                <span class="dropdown-item-desc">Register riders and monitor live statuses</span>
+              </div>
+            </button>
+
+            <button type="button" class="dropdown-item-btn" id="menu-btn-dispatch" role="menuitem">
+              <span class="dropdown-item-icon">&#128230;</span>
+              <div class="dropdown-item-info">
+                <span class="dropdown-item-title">Automated Dispatch Engine</span>
+                <span class="dropdown-item-desc">Auto-assign orders to closest available rider</span>
+              </div>
+            </button>
+          </div>
+
+          <div class="dropdown-divider"></div>
+
+          <!-- Log Out Session -->
+          <div class="dropdown-footer">
+            <button type="button" class="dropdown-logout-btn" id="menu-btn-logout" role="menuitem" title="Terminate current hotel session and sign in again">
+              <span class="logout-icon">&#128682;</span>
+              <span>Log Out Session</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </nav>
@@ -450,13 +839,18 @@
               </div>
             </div>
 
-            <div class="form-actions">
-              <button type="submit" id="submit-btn" class="btn btn-primary">
-                <span class="btn-text">Predict Delivery Time</span>
-                <span class="spinner hidden" id="spinner"></span>
-              </button>
-              <button type="button" id="reset-btn" class="btn btn-secondary">
-                Reset Defaults
+            <div class="form-actions" style="display: flex; flex-direction: column; gap: 0.55rem;">
+              <div style="display: flex; gap: 0.75rem; width: 100%;">
+                <button type="submit" id="submit-btn" class="btn btn-primary" style="flex: 2;">
+                  <span class="btn-text">Predict Delivery Time</span>
+                  <span class="spinner hidden" id="spinner"></span>
+                </button>
+                <button type="button" id="reset-btn" class="btn btn-secondary" style="flex: 1;">
+                  Reset
+                </button>
+              </div>
+              <button type="button" id="btn-goto-dispatch" class="btn btn-secondary" style="width: 100%; border: 1.5px solid #6366f1; color: #4338ca; background: #eef2ff; font-weight: 700;">
+                ⚡ Launch Automated Dispatch Engine &rarr;
               </button>
             </div>
           </form>
@@ -485,6 +879,9 @@
                 <span class="unit">minutes</span>
               </div>
               <div class="result-meta" id="result-meta">Predicted using Phase 15 Scikit-Learn Pipeline &bull; Saved to SQLite</div>
+              <button type="button" class="btn btn-primary btn-sm" id="btn-goto-dispatch" style="margin-top: 0.85rem; width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.5rem; font-size: 0.82rem; font-weight: 700; padding: 0.6rem 1rem;">
+                <span>&#9889;</span> <span>Instant Dispatch to Closest Courier</span>
+              </button>
             </div>
           </div>
 
@@ -886,6 +1283,12 @@
               <input type="text" id="rider-phone-input" placeholder="e.g. +92 300 1234567" required />
             </div>
 
+            <!-- Courier Email Address for Dispatch Notifications -->
+            <div class="form-group">
+              <label for="rider-email-input">Courier Email Address <span class="required">*</span></label>
+              <input type="email" id="rider-email-input" placeholder="e.g. tariq.khan@deliveryhub.com" required />
+            </div>
+
             <!-- Vehicle Mode -->
             <div class="form-group">
               <label for="rider-vehicle-input">Primary Vehicle <span class="required">*</span></label>
@@ -987,6 +1390,331 @@
       </div>
     </main>
 
+    <!-- =========================================================================
+         TAB 6: Automated Dispatch Engine & Cascading Pipeline
+         ========================================================================= -->
+    <main class="main-card tab-content" id="dispatch-tab">
+      <!-- Section Header -->
+      <div class="dispatch-header-banner">
+        <div class="dispatch-banner-text">
+          <div class="dispatch-badge-row">
+            <span class="badge-dispatch-live"><span class="live-ping"></span> Real-Time Proximity Engine</span>
+            <span class="badge-ml-active">&#129302; ML Pipeline Connected</span>
+          </div>
+          <h2>Automated Dispatch Engine &amp; Cascading Pipeline</h2>
+          <p class="dispatch-banner-sub">
+            Instant courier proximity assignment, interactive email dispatch with 5-minute cascading timeout, and continuous feature logging for ML retraining.
+          </p>
+        </div>
+        <div class="dispatch-banner-actions">
+          <button type="button" class="btn btn-secondary btn-sm" id="btn-refresh-dispatches">
+            &#128260; Refresh Pipeline
+          </button>
+          <button type="button" class="btn btn-secondary btn-sm" id="btn-toggle-raw-ml">
+            &#128202; View Raw ML Logs
+          </button>
+        </div>
+      </div>
+
+      <!-- Two-Column Layout: Left = Admin Order Input & Verification | Right = Live Dispatch Cockpit & Active Cascade -->
+      <div class="dispatch-layout-grid">
+        <!-- LEFT COLUMN: Phase 1: Admin Input & Instant Verification -->
+        <div class="dispatch-card dispatch-input-card">
+          <div class="card-inner-header">
+            <div>
+              <h3 class="card-inner-title">&#128203; 1. Admin Order Input &amp; Verification</h3>
+              <p class="card-inner-desc">Enter customer details. System auto-generates tracking ID &amp; enriches live weather, distance, and proximity.</p>
+            </div>
+            <button type="button" class="btn-regen-track" id="btn-gen-tracking-id" title="Generate New Tracking ID">
+              &#8635; New ID
+            </button>
+          </div>
+
+          <form id="dispatch-admin-form" onsubmit="return false;" novalidate>
+            <!-- Auto-Generated Tracking ID Field -->
+            <div class="form-group" style="margin-bottom: 1rem;">
+              <div class="label-with-badge">
+                <label for="dispatch-tracking-id">System-Generated Tracking ID <span class="required">*</span></label>
+                <span class="sync-badge" id="tracking-id-badge">&#9889; Auto-Generated</span>
+              </div>
+              <div class="input-with-copy">
+                <input type="text" id="dispatch-tracking-id" readonly placeholder="Generating TRK-..." class="tracking-input-highlight" />
+                <button type="button" class="btn-copy-tracking" id="btn-copy-tracking" title="Copy Tracking ID">&#128203;</button>
+              </div>
+              <span class="field-hint">Guaranteed unique alphanumeric order identifier</span>
+            </div>
+
+            <!-- Client Name & Contact Number Grid -->
+            <div class="dispatch-form-row">
+              <div class="form-group">
+                <label for="dispatch-client-name">Client Name <span class="required">*</span></label>
+                <input type="text" id="dispatch-client-name" placeholder="e.g. Sarah Connor" value="Sarah Connor" required />
+              </div>
+              <div class="form-group">
+                <label for="dispatch-client-phone">Contact Number <span class="required">*</span></label>
+                <input type="text" id="dispatch-client-phone" placeholder="e.g. +1 (555) 987-6543" value="+1 (555) 987-6543" required />
+              </div>
+            </div>
+
+            <!-- Client Delivery Address -->
+            <div class="form-group" style="margin-bottom: 1rem;">
+              <div class="label-with-badge">
+                <label for="dispatch-client-address">Delivery Address <span class="required">*</span></label>
+                <button type="button" class="btn-quick-address" id="btn-use-map-address">&#128205; Use Map Dropoff</button>
+              </div>
+              <input type="text" id="dispatch-client-address" placeholder="e.g. 350 5th Ave, Floor 14, New York, NY" value="350 5th Ave, Floor 14, New York, NY" required />
+              <span class="field-hint">Street address for courier navigation and route calculation</span>
+            </div>
+
+            <!-- Automated Backend Data Enrichment Badges -->
+            <div class="enrichment-preview-box">
+              <div class="enrichment-title">&#9889; Automated Backend Data Enrichment</div>
+              <div class="enrichment-chips-grid">
+                <div class="enrichment-chip" id="chip-distance">
+                  <span class="chip-icon">&#128663;</span>
+                  <span class="chip-lbl">Distance:</span>
+                  <span class="chip-val" id="val-enrich-distance">Auto-Computing...</span>
+                </div>
+                <div class="enrichment-chip" id="chip-weather">
+                  <span class="chip-icon">&#9925;</span>
+                  <span class="chip-lbl">Live Weather:</span>
+                  <span class="chip-val" id="val-enrich-weather">Fetching API...</span>
+                </div>
+                <div class="enrichment-chip" id="chip-time">
+                  <span class="chip-icon">&#128340;</span>
+                  <span class="chip-lbl">Time of Day:</span>
+                  <span class="chip-val" id="val-enrich-time">Auto-Logged</span>
+                </div>
+                <div class="enrichment-chip" id="chip-proximity">
+                  <span class="chip-icon">&#128205;</span>
+                  <span class="chip-lbl">Courier Proximity:</span>
+                  <span class="chip-val" id="val-enrich-proximity">Native GPS Active</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Optional Kitchen Prep Time & Vehicle Preset -->
+            <div class="dispatch-form-row" style="margin-top: 0.75rem;">
+              <div class="form-group">
+                <label for="dispatch-prep-time">Kitchen Prep Time (min)</label>
+                <input type="number" id="dispatch-prep-time" min="0" max="120" step="1" value="15" />
+              </div>
+              <div class="form-group">
+                <label for="dispatch-traffic-level">Traffic Condition</label>
+                <select id="dispatch-traffic-level">
+                  <option value="Low">Low</option>
+                  <option value="Medium" selected>Medium</option>
+                  <option value="High">High</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Confirm & Instant Dispatch CTA -->
+            <div class="dispatch-action-footer">
+              <button type="submit" class="btn btn-primary btn-dispatch-master" id="btn-confirm-dispatch">
+                <span class="btn-text">&#9889; Confirm &amp; Instant Dispatch</span>
+                <span class="spinner hidden" id="dispatch-spinner"></span>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- RIGHT COLUMN: Phase 2: Live Dispatch Cockpit & Cascading Status -->
+        <div class="dispatch-card dispatch-cockpit-card">
+          <div class="card-inner-header">
+            <div>
+              <h3 class="card-inner-title">&#128752; 2. Live Dispatch Cockpit &amp; Cascade Pipeline</h3>
+              <p class="card-inner-desc">Tracks real-time assignment, 5-minute timeout countdown, and cascading fallback.</p>
+            </div>
+            <span class="dispatch-status-chip" id="cockpit-status-chip">Idle / Awaiting Dispatch</span>
+          </div>
+
+          <!-- Empty State (When no order is active) -->
+          <div id="cockpit-empty-state" class="cockpit-empty">
+            <div class="empty-icon">&#128230;</div>
+            <h4>No Active Dispatch Session</h4>
+            <p>Fill in the client details on the left and click <strong>"Confirm &amp; Instant Dispatch"</strong> to launch the automated proximity check and email pipeline.</p>
+          </div>
+
+          <!-- Active Dispatch Session Card (Shown when order is created) -->
+          <div id="cockpit-active-session" class="cockpit-active-content hidden">
+            <!-- Active Mission Summary Header -->
+            <div class="active-mission-head">
+              <div class="mission-tracking-box">
+                <span class="mission-lbl">MISSION TRACKING ID</span>
+                <span class="mission-trk" id="cockpit-trk-id">TRK-000000</span>
+              </div>
+              <!-- 5-Minute Countdown Timer Widget -->
+              <div class="timeout-timer-widget" id="timeout-timer-widget">
+                <span class="timer-lbl">&#9203; COURIER RESPONSE WINDOW</span>
+                <div class="timer-clock">
+                  <span class="timer-digits" id="cockpit-countdown">05:00</span>
+                  <span class="timer-sec-hint">remaining</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Matched Closest Rider Highlight -->
+            <div class="assigned-rider-box">
+              <div class="rider-box-top">
+                <div class="rider-profile-row">
+                  <div class="rider-bubble-avatar" id="cockpit-rider-avatar">&#128757;</div>
+                  <div>
+                    <div class="rider-box-name" id="cockpit-rider-name">Alex Mercer</div>
+                    <div class="rider-box-email" id="cockpit-rider-email">alex.mercer@example.com</div>
+                  </div>
+                </div>
+                <div class="rider-perf-badge" id="cockpit-rider-perf">
+                  &#11088; 4.9 &bull; 100% On-Time
+                </div>
+              </div>
+              <div class="rider-box-metrics">
+                <div class="metric-item">
+                  <span class="m-val" id="cockpit-dist-hotel">0.2 km</span>
+                  <span class="m-lbl">Distance to Hub</span>
+                </div>
+                <div class="metric-item">
+                  <span class="m-val" id="cockpit-delivery-dist">2.5 km</span>
+                  <span class="m-lbl">Delivery Trip</span>
+                </div>
+                <div class="metric-item">
+                  <span class="m-val highlight" id="cockpit-predicted-eta">~28.5 min</span>
+                  <span class="m-lbl">ML Estimated ETA</span>
+                </div>
+                <div class="metric-item">
+                  <span class="m-val" id="cockpit-attempt-count">1</span>
+                  <span class="m-lbl">Cascade Attempt</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Email Pipeline Notification & Simulation Actions -->
+            <div class="pipeline-actions-panel">
+              <div class="panel-heading">
+                <span>&#9993;&#65039; Email Dispatch Pipeline &amp; Action Simulation</span>
+                <span class="sim-badge">Interactive Test Controls</span>
+              </div>
+              <p class="panel-sub">
+                An interactive notification was prepared and sent to <strong><span id="cockpit-email-recipient">courier</span></strong> with <strong>[Activate Order]</strong> and <strong>[Deactivate Order]</strong> buttons.
+              </p>
+
+              <!-- Action Simulation Buttons -->
+              <div class="sim-buttons-grid">
+                <button type="button" class="btn btn-preview-email" id="btn-preview-email-modal">
+                  &#9993;&#65039; View Sent Email Template
+                </button>
+                <button type="button" class="btn btn-sim-activate" id="btn-sim-activate">
+                  &#9989; Simulate: [Activate Order]
+                </button>
+                <button type="button" class="btn btn-sim-deactivate" id="btn-sim-deactivate">
+                  &#10060; Simulate: [Deactivate Order]
+                </button>
+                <button type="button" class="btn btn-sim-timeout" id="btn-sim-timeout">
+                  &#9201; Simulate: 5-Min Timeout Expiry
+                </button>
+              </div>
+            </div>
+
+            <!-- Delivery Completion & Performance Recording Section -->
+            <div class="delivery-completion-box" id="delivery-completion-box">
+              <div class="completion-head">
+                <span>&#127937; 3. Delivery Confirmation &amp; ML Performance Feedback</span>
+              </div>
+              <p class="completion-sub">
+                When the rider delivers the order, the system computes whether they arrived within or before the ML ETA. High performance is permanently rewarded in the Rider Fleet and logged for retraining.
+              </p>
+              <div class="completion-action-row">
+                <div class="duration-input-wrap">
+                  <label for="input-actual-duration">Actual Trip Duration (min):</label>
+                  <input type="number" id="input-actual-duration" min="1" max="180" step="0.5" value="24" />
+                </div>
+                <button type="button" class="btn btn-success btn-mark-delivered" id="btn-mark-delivered">
+                  &#127942; Record Delivered &amp; Score Rider
+                </button>
+              </div>
+              <div id="delivery-result-banner" class="delivery-result-banner hidden"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BOTTOM SECTION: Active Dispatches & Raw ML Dataset Table -->
+      <div class="dispatch-tables-container" style="margin-top: 2rem;">
+        <!-- Tab Sub-Header for Tables -->
+        <div class="sub-table-header">
+          <div class="sub-table-tabs">
+            <button type="button" class="sub-tab-btn active" id="subtab-active-orders">
+              &#128230; Recent Dispatches (<span id="dispatch-table-count">0</span>)
+            </button>
+            <button type="button" class="sub-tab-btn" id="subtab-raw-ml">
+              &#129302; Raw ML Retraining Dataset (<span id="raw-ml-table-count">0</span>)
+            </button>
+          </div>
+        </div>
+
+        <!-- Table 1: Recent Dispatches -->
+        <div id="view-active-orders" class="table-card">
+          <div class="history-table-container">
+            <table class="data-table" id="dispatches-table">
+              <thead>
+                <tr>
+                  <th>Tracking ID</th>
+                  <th>Client</th>
+                  <th>Contact</th>
+                  <th>Assigned Rider</th>
+                  <th>Distance</th>
+                  <th>Weather</th>
+                  <th>ML ETA</th>
+                  <th>Attempts</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="dispatches-table-body">
+                <tr><td colspan="10" class="empty-cell">No dispatch records found.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Table 2: Raw ML Dataset Table -->
+        <div id="view-raw-ml" class="table-card hidden">
+          <div class="raw-ml-banner">
+            <div>
+              <strong>Raw Data Storage Format for Machine Learning Retraining</strong>
+              <p>These enriched operational records are fed directly into the model retraining pipeline (Feature Engineering &bull; Outlier Detection &bull; Stacking Regressor).</p>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-export-raw-ml">
+              &#128229; Export JSON
+            </button>
+          </div>
+          <div class="history-table-container">
+            <table class="data-table" id="raw-ml-table">
+              <thead>
+                <tr>
+                  <th>Tracking ID</th>
+                  <th>Distance (km)</th>
+                  <th>Weather</th>
+                  <th>Traffic</th>
+                  <th>Time of Day</th>
+                  <th>Vehicle</th>
+                  <th>Prep (min)</th>
+                  <th>Courier Exp</th>
+                  <th>Predicted ETA</th>
+                  <th>Actual (min)</th>
+                  <th>On-Time</th>
+                  <th>Logged At</th>
+                </tr>
+              </thead>
+              <tbody id="raw-ml-table-body">
+                <tr><td colspan="12" class="empty-cell">No raw ML records logged yet. Complete a delivery to generate retraining records.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+
     <footer class="app-footer">
       <p>Delivery Time Prediction ML &bull; FastAPI + SQLite + Scikit-Learn Production Serving</p>
     </footer>
@@ -1033,8 +1761,40 @@
         </div>
         <span class="bottom-nav-label">Fleet</span>
       </button>
+
+      <button type="button" class="bottom-nav-item tab-btn" data-tab="dispatch-tab" id="bnav-dispatch" aria-label="Automated Dispatch">
+        <div class="bottom-nav-icon-wrap">
+          <span class="bottom-nav-icon">&#128230;</span>
+          <span class="bottom-nav-badge" id="bnav-dispatch-badge">0</span>
+        </div>
+        <span class="bottom-nav-label">Dispatch</span>
+      </button>
     </div>
   </nav>
+
+  <!-- =========================================================================
+       Interactive Email Simulator Modal
+       ========================================================================= -->
+  <div id="email-preview-modal" class="modal-overlay hidden">
+    <div class="modal-box email-modal-container">
+      <div class="modal-header">
+        <div class="modal-title-row" style="display: flex; align-items: center; gap: 0.5rem;">
+          <span style="font-size: 1.5rem;">&#9993;&#65039;</span>
+          <div>
+            <h3 style="margin: 0; font-size: 1.15rem;">Interactive Courier Email Preview</h3>
+            <span style="font-size: 0.75rem; color: var(--text-muted);">Sent by Dispatch Engine &bull; Contains interactive action buttons</span>
+          </div>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-email-modal">&times;</button>
+      </div>
+      <div class="modal-body email-modal-body">
+        <div class="email-iframe-wrapper" id="email-iframe-wrapper">
+          <!-- Rendered HTML email loaded here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
 
   <!-- =========================================================================
        Hotel Profile Setup & Settings Modal
@@ -1114,7 +1874,7 @@
     </div>
   </div>
 
-  <script src="script.js?v=18"></script>
+  <script src="script.js?v=23"></script>
 </body>
 </html>
 

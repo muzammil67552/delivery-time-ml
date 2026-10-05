@@ -68,6 +68,116 @@ document.addEventListener("DOMContentLoaded", () => {
   const navbarHotelName = document.getElementById("navbar-hotel-name");
   const navbarModelBadge = document.getElementById("navbar-model-badge");
 
+  // Hamburger Profile Menu & Session Logout Elements
+  const btnNavbarHamburger = document.getElementById("btn-navbar-hamburger");
+  const hotelProfileDropdown = document.getElementById("hotel-profile-dropdown");
+  const navbarHotelPillText = document.getElementById("navbar-hotel-pill-text");
+  const dropdownModelBadge = document.getElementById("dropdown-model-badge");
+  const dropdownCityBadge = document.getElementById("dropdown-city-badge");
+  const dropdownHotelName = document.getElementById("dropdown-hotel-name");
+  const dropdownHotelAddressText = document.getElementById("dropdown-hotel-address-text");
+  const dropdownPrepPill = document.getElementById("dropdown-prep-pill");
+  const dropdownVehiclePill = document.getElementById("dropdown-vehicle-pill");
+  const menuBtnRetrain = document.getElementById("menu-btn-retrain");
+  const menuBtnRiders = document.getElementById("menu-btn-riders");
+  const menuBtnDispatch = document.getElementById("menu-btn-dispatch");
+  const menuBtnLogout = document.getElementById("menu-btn-logout");
+
+  function toggleHotelProfileDropdown(forceState) {
+    if (!hotelProfileDropdown || !btnNavbarHamburger) return;
+    const shouldOpen = typeof forceState === "boolean" 
+      ? forceState 
+      : !hotelProfileDropdown.classList.contains("open");
+    
+    if (shouldOpen) {
+      hotelProfileDropdown.classList.add("open");
+      btnNavbarHamburger.classList.add("active");
+      btnNavbarHamburger.setAttribute("aria-expanded", "true");
+    } else {
+      hotelProfileDropdown.classList.remove("open");
+      btnNavbarHamburger.classList.remove("active");
+      btnNavbarHamburger.setAttribute("aria-expanded", "false");
+    }
+  }
+
+  if (btnNavbarHamburger) {
+    btnNavbarHamburger.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleHotelProfileDropdown();
+    });
+  }
+
+  // Close dropdown on outside click
+  document.addEventListener("click", (e) => {
+    if (hotelProfileDropdown && hotelProfileDropdown.classList.contains("open")) {
+      if (!hotelProfileDropdown.contains(e.target) && !btnNavbarHamburger.contains(e.target)) {
+        toggleHotelProfileDropdown(false);
+      }
+    }
+  });
+
+  // Close dropdown on Escape key
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && hotelProfileDropdown && hotelProfileDropdown.classList.contains("open")) {
+      toggleHotelProfileDropdown(false);
+    }
+  });
+
+  // Navigation shortcuts inside hamburger menu
+  if (menuBtnRetrain) {
+    menuBtnRetrain.addEventListener("click", () => {
+      toggleHotelProfileDropdown(false);
+      const retrainTabBtn = document.getElementById("tab-retrain");
+      if (retrainTabBtn) retrainTabBtn.click();
+    });
+  }
+
+  if (menuBtnRiders) {
+    menuBtnRiders.addEventListener("click", () => {
+      toggleHotelProfileDropdown(false);
+      const ridersTabBtn = document.getElementById("tab-riders");
+      if (ridersTabBtn) ridersTabBtn.click();
+    });
+  }
+
+  if (menuBtnDispatch) {
+    menuBtnDispatch.addEventListener("click", () => {
+      toggleHotelProfileDropdown(false);
+      const dispatchTabBtn = document.getElementById("tab-dispatch");
+      if (dispatchTabBtn) dispatchTabBtn.click();
+    });
+  }
+
+  // Log Out Session Action
+  async function performHotelLogout() {
+    try {
+      await fetch(`${API_BASE}/api/hotel-logout`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" }
+      });
+    } catch (err) {
+      console.warn("Server logout notification failed, continuing local clear:", err);
+    }
+    // Clear localStorage session keys
+    try {
+      localStorage.removeItem("dtml_active_hotel_id");
+      localStorage.removeItem("dtml_active_hotel");
+      sessionStorage.clear();
+    } catch (e) {}
+    // Clear cookie
+    document.cookie = "active_hotel_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    // Redirect to onboarding & login page
+    window.location.href = "/welcome";
+  }
+
+  if (menuBtnLogout) {
+    menuBtnLogout.addEventListener("click", (e) => {
+      e.preventDefault();
+      toggleHotelProfileDropdown(false);
+      performHotelLogout();
+    });
+  }
+
   function openHotelModal() {
     if (hotelModal) hotelModal.classList.remove("hidden");
   }
@@ -107,10 +217,15 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Load existing hotel profile on startup (silently with sensible defaults)
+  // Load existing hotel profile on startup (silently with sensible defaults)
   async function loadHotelProfile() {
     await loadCityPresets();
     try {
-      const res = await fetch(`${API_BASE}/api/hotel-profile`);
+      const activeHotelId = localStorage.getItem("dtml_active_hotel_id");
+      const url = activeHotelId ? `${API_BASE}/api/hotel-profile?hotel_id=${encodeURIComponent(activeHotelId)}` : `${API_BASE}/api/hotel-profile`;
+      const res = await fetch(url, {
+        headers: activeHotelId ? { "X-Hotel-ID": String(activeHotelId) } : {}
+      });
       if (!res.ok) {
         initMap();
         renderLandmarkPills();
@@ -120,6 +235,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (data.is_configured && data.profile) {
         const p = data.profile;
+        if (p.id) {
+          try {
+            localStorage.setItem("dtml_active_hotel_id", String(p.id));
+            localStorage.setItem("dtml_active_hotel", p.hotel_name || "");
+          } catch (e) {}
+        }
         hotelState.name = p.hotel_name || "Hotel Express Hub";
         hotelState.address = p.branch_or_address || "Operational Hub";
         hotelState.lat = parseFloat(p.latitude) || 40.7306;
@@ -136,25 +257,46 @@ document.addEventListener("DOMContentLoaded", () => {
             : `${p.hotel_name} (${hotelState.city_preset})`;
         }
 
-        // Update Navbar Hotel Chip with Hotel Name and Street Address
+        // Update Navbar Hamburger Pill Text (compact, prevents desktop horizontal scrollbar)
+        if (navbarHotelPillText) {
+          navbarHotelPillText.textContent = p.hotel_name || "Hotel Profile";
+          navbarHotelPillText.title = `${p.hotel_name || ''} - ${p.branch_or_address || ''}`;
+        }
         if (navbarHotelName) {
-          navbarHotelName.textContent = p.branch_or_address 
-            ? `${p.hotel_name} • ${p.branch_or_address}` 
-            : (p.city_preset ? `${p.hotel_name} • ${p.city_preset}` : p.hotel_name);
-          navbarHotelName.title = `${p.hotel_name} - ${p.branch_or_address || ''} (${p.city_preset || ''})`;
+          navbarHotelName.textContent = p.hotel_name || "Hotel Profile";
+        }
+
+        // Update Complete Hotel Details inside the Hamburger Dropdown Menu
+        if (dropdownHotelName) {
+          dropdownHotelName.textContent = p.hotel_name || "Hotel Express Hub";
+        }
+        if (dropdownHotelAddressText) {
+          dropdownHotelAddressText.textContent = p.branch_or_address || `${hotelState.city_preset} Operational Hub`;
+        }
+        if (dropdownCityBadge) {
+          dropdownCityBadge.textContent = `${p.city_preset || "New York"} Hub`;
+        }
+        if (dropdownPrepPill) {
+          dropdownPrepPill.innerHTML = `&#9201; ${p.default_prep_time_min || 15} min prep`;
+        }
+        if (dropdownVehiclePill) {
+          dropdownVehiclePill.innerHTML = `&#128757; ${p.default_vehicle_type || "Scooter"}`;
+        }
+        if (dropdownModelBadge) {
+          if (p.has_custom_model) {
+            dropdownModelBadge.innerHTML = "&#11088; Custom Model";
+            dropdownModelBadge.style.background = "#ecfdf5";
+            dropdownModelBadge.style.color = "#047857";
+            dropdownModelBadge.style.borderColor = "#a7f3d0";
+          } else {
+            dropdownModelBadge.innerHTML = "&#9889; Production Model";
+            dropdownModelBadge.style.background = "#eef2ff";
+            dropdownModelBadge.style.color = "#4338ca";
+            dropdownModelBadge.style.borderColor = "#c7d2fe";
+          }
         }
         if (navbarModelBadge) {
-          if (p.has_custom_model) {
-            navbarModelBadge.innerHTML = "&#11088; Custom Model";
-            navbarModelBadge.style.background = "#ecfdf5";
-            navbarModelBadge.style.color = "#047857";
-            navbarModelBadge.style.borderColor = "#a7f3d0";
-          } else {
-            navbarModelBadge.innerHTML = "&#9889; Production Model";
-            navbarModelBadge.style.background = "#eef2ff";
-            navbarModelBadge.style.color = "#4338ca";
-            navbarModelBadge.style.borderColor = "#c7d2fe";
-          }
+          navbarModelBadge.innerHTML = dropdownModelBadge ? dropdownModelBadge.innerHTML : "&#9889; Production Model";
         }
 
         // Pre-fill prediction defaults
@@ -200,7 +342,9 @@ document.addEventListener("DOMContentLoaded", () => {
   if (hotelProfileForm) {
     hotelProfileForm.addEventListener("submit", async (e) => {
       e.preventDefault();
+      const activeHotelId = localStorage.getItem("dtml_active_hotel_id");
       const payload = {
+        id: activeHotelId ? parseInt(activeHotelId, 10) : undefined,
         hotel_name: modalHotelName ? modalHotelName.value.trim() : "Hotel Hub",
         branch_or_address: modalHotelAddress ? modalHotelAddress.value.trim() : "",
         default_prep_time_min: modalPrepTime ? (parseFloat(modalPrepTime.value) || 15.0) : 15.0,
@@ -213,15 +357,25 @@ document.addEventListener("DOMContentLoaded", () => {
       };
 
       try {
+        const headers = { "Content-Type": "application/json" };
+        if (activeHotelId) {
+          headers["X-Hotel-ID"] = String(activeHotelId);
+        }
         const res = await fetch(`${API_BASE}/api/hotel-profile`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: headers,
           body: JSON.stringify(payload),
         });
 
         if (res.ok) {
           const data = await res.json();
           const p = data.profile;
+          if (p.id) {
+            try {
+              localStorage.setItem("dtml_active_hotel_id", String(p.id));
+              localStorage.setItem("dtml_active_hotel", p.hotel_name || "");
+            } catch (e) {}
+          }
           hotelState.name = p.hotel_name;
           hotelState.address = p.branch_or_address;
           hotelState.lat = parseFloat(p.latitude) || 40.7306;
@@ -624,11 +778,25 @@ document.addEventListener("DOMContentLoaded", () => {
         requestNativeSensorTracking(false);
       }
 
+      if (targetId === "dispatch-tab") {
+        fetchNewTrackingId();
+        updateEnrichmentPreview();
+        loadRecentDispatches();
+        loadRawMlData();
+      }
+
       // Re-invalidate Leaflet map size on tab switch
       if (targetId === "single-tab" && map) {
         setTimeout(() => map.invalidateSize(), 150);
       }
     });
+  });
+
+  // Keep Leaflet map geometry sharp on viewport resize
+  window.addEventListener("resize", () => {
+    if (map) {
+      map.invalidateSize();
+    }
   });
 
   // =========================================================================
@@ -715,12 +883,21 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    const activeHotelId = localStorage.getItem("dtml_active_hotel_id");
+    if (activeHotelId) {
+      payload.Hotel_ID = parseInt(activeHotelId, 10);
+    }
+
     setSingleLoading(true);
 
     try {
+      const predHeaders = { "Content-Type": "application/json" };
+      if (activeHotelId) {
+        predHeaders["X-Hotel-ID"] = String(activeHotelId);
+      }
       const response = await fetch(`${API_BASE}/predict`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: predHeaders,
         body: JSON.stringify(payload),
       });
 
@@ -978,7 +1155,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function loadOrderHistory(badgeOnly = false) {
     try {
-      const res = await fetch(`${API_BASE}/api/order-history?limit=100`);
+      const activeHotelId = localStorage.getItem("dtml_active_hotel_id");
+      const url = activeHotelId 
+        ? `${API_BASE}/api/order-history?limit=100&hotel_id=${encodeURIComponent(activeHotelId)}` 
+        : `${API_BASE}/api/order-history?limit=100`;
+      const res = await fetch(url, {
+        headers: activeHotelId ? { "X-Hotel-ID": String(activeHotelId) } : {}
+      });
       if (!res.ok) return;
       const data = await res.json();
 
@@ -1075,12 +1258,17 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   clearHistoryBtn.addEventListener("click", async () => {
-    if (!confirm("Are you sure you want to clear all prediction history records from SQLite?")) {
+    if (!confirm("Are you sure you want to clear all prediction history records from SQLite for this hotel?")) {
       return;
     }
 
     try {
-      const res = await fetch(`${API_BASE}/api/order-history`, { method: "DELETE" });
+      const activeHotelId = localStorage.getItem("dtml_active_hotel_id");
+      const url = activeHotelId ? `${API_BASE}/api/order-history?hotel_id=${encodeURIComponent(activeHotelId)}` : `${API_BASE}/api/order-history`;
+      const res = await fetch(url, {
+        method: "DELETE",
+        headers: activeHotelId ? { "X-Hotel-ID": String(activeHotelId) } : {}
+      });
       if (res.ok) {
         loadOrderHistory(false);
       }
@@ -1105,6 +1293,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const riderRegisterForm = document.getElementById("rider-register-form");
   const riderNameInput = document.getElementById("rider-name-input");
   const riderPhoneInput = document.getElementById("rider-phone-input");
+  const riderEmailInput = document.getElementById("rider-email-input");
   const riderVehicleInput = document.getElementById("rider-vehicle-input");
   const riderExpInput = document.getElementById("rider-exp-input");
   const riderAddressInput = document.getElementById("rider-address-input");
@@ -1311,7 +1500,11 @@ document.addEventListener("DOMContentLoaded", () => {
   // Load Fleet Summary Stats
   async function loadFleetStats() {
     try {
-      const res = await fetch(`${API_BASE}/api/fleet/stats`);
+      const activeHotelId = localStorage.getItem("dtml_active_hotel_id");
+      const url = activeHotelId ? `${API_BASE}/api/fleet/stats?hotel_id=${encodeURIComponent(activeHotelId)}` : `${API_BASE}/api/fleet/stats`;
+      const res = await fetch(url, {
+        headers: activeHotelId ? { "X-Hotel-ID": String(activeHotelId) } : {}
+      });
       if (!res.ok) return;
       const data = await res.json();
       const stats = data.stats || data;
@@ -1328,7 +1521,11 @@ document.addEventListener("DOMContentLoaded", () => {
   // Load Riders List
   async function loadRidersList() {
     try {
-      const res = await fetch(`${API_BASE}/api/riders`);
+      const activeHotelId = localStorage.getItem("dtml_active_hotel_id");
+      const url = activeHotelId ? `${API_BASE}/api/riders?hotel_id=${encodeURIComponent(activeHotelId)}` : `${API_BASE}/api/riders`;
+      const res = await fetch(url, {
+        headers: activeHotelId ? { "X-Hotel-ID": String(activeHotelId) } : {}
+      });
       if (!res.ok) return;
       const data = await res.json();
       currentRidersFleet = data.riders || [];
@@ -1357,7 +1554,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const opt = document.createElement("option");
       opt.value = rider.id;
       const statusIcon = rider.status === "Available" ? "🟢" : (rider.status === "On Delivery" ? "📦" : "⚪");
-      opt.textContent = `${statusIcon} ${rider.rider_name} (${rider.vehicle_type}, ${rider.courier_exp_yrs} yrs exp) - ${rider.status}`;
+      const emailDisplay = rider.email ? ` [${rider.email}]` : "";
+      opt.textContent = `${statusIcon} ${rider.rider_name}${emailDisplay} (${rider.vehicle_type}, ${rider.courier_exp_yrs} yrs exp) - ${rider.status}`;
       assignRiderSelect.appendChild(opt);
     });
 
@@ -1415,6 +1613,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <div>
               <div class="rider-meta-name">${rider.rider_name}</div>
               <div class="rider-meta-phone">📞 ${rider.phone || "No phone"}</div>
+              <div class="rider-meta-email" style="font-size: 0.72rem; color: #4f46e5; font-weight: 500;">✉️ ${rider.email || "No email registered"}</div>
             </div>
           </div>
           <span class="rider-status-badge ${statusClass}">${rider.status}</span>
@@ -1574,8 +1773,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const nameVal = riderNameInput ? riderNameInput.value.trim() : "";
       const phoneVal = riderPhoneInput ? riderPhoneInput.value.trim() : "";
-      if (!nameVal || !phoneVal) {
-        alert("Please provide the courier name and phone number.");
+      const emailVal = riderEmailInput ? riderEmailInput.value.trim() : "";
+      if (!nameVal || !phoneVal || !emailVal) {
+        alert("Please provide the courier name, contact phone, and email address.");
         return;
       }
 
@@ -1585,6 +1785,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const payload = {
         rider_name: nameVal,
         phone: phoneVal,
+        email: emailVal,
         vehicle_type: riderVehicleInput ? riderVehicleInput.value : "Scooter",
         courier_exp_yrs: parseFloat(riderExpInput ? riderExpInput.value : "2.5") || 2.5,
         rating: parseFloat(riderRatingInput ? riderRatingInput.value : "4.8") || 4.8,
@@ -1594,13 +1795,22 @@ document.addEventListener("DOMContentLoaded", () => {
         current_lng: lngVal,
       };
 
+      const activeHotelId = localStorage.getItem("dtml_active_hotel_id");
+      if (activeHotelId) {
+        payload.hotel_id = parseInt(activeHotelId, 10);
+      }
+
       if (btnSubmitRider) btnSubmitRider.disabled = true;
       if (riderSpinner) riderSpinner.classList.remove("hidden");
 
       try {
+        const riderHeaders = { "Content-Type": "application/json" };
+        if (activeHotelId) {
+          riderHeaders["X-Hotel-ID"] = String(activeHotelId);
+        }
         const res = await fetch(`${API_BASE}/api/riders`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: riderHeaders,
           body: JSON.stringify(payload),
         });
 
@@ -1620,7 +1830,7 @@ document.addEventListener("DOMContentLoaded", () => {
           }
 
           if (riderGpsStatusHint) {
-            riderGpsStatusHint.textContent = `✅ Courier ${payload.rider_name} successfully registered with Live Native GPS coordinates [${payload.current_lat}, ${payload.current_lng}] without hardware device!`;
+            riderGpsStatusHint.textContent = `✅ Courier ${payload.rider_name} (${payload.email}) successfully registered! Real-time dispatch emails will be automatically routed to this address.`;
             riderGpsStatusHint.style.color = "#059669";
           }
           await loadRidersList();
@@ -1638,10 +1848,826 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Initialize hotel profile, riders fleet, and history badge on page load
+  // =========================================================================
+  // 9. Automated Dispatch Engine & Cascading Pipeline Controller
+  // =========================================================================
+  const dispatchTrackingIdInput = document.getElementById("dispatch-tracking-id");
+  const btnGenTrackingId = document.getElementById("btn-gen-tracking-id");
+  const btnCopyTracking = document.getElementById("btn-copy-tracking");
+  const dispatchClientNameInput = document.getElementById("dispatch-client-name");
+  const dispatchClientPhoneInput = document.getElementById("dispatch-client-phone");
+  const dispatchClientAddressInput = document.getElementById("dispatch-client-address");
+  const btnUseMapAddress = document.getElementById("btn-use-map-address");
+  const dispatchPrepTimeInput = document.getElementById("dispatch-prep-time");
+  const dispatchTrafficLevelInput = document.getElementById("dispatch-traffic-level");
+  const dispatchAdminForm = document.getElementById("dispatch-admin-form");
+  const btnConfirmDispatch = document.getElementById("btn-confirm-dispatch");
+  const dispatchSpinner = document.getElementById("dispatch-spinner");
+
+  // Enrichment Badges
+  const valEnrichDistance = document.getElementById("val-enrich-distance");
+  const valEnrichWeather = document.getElementById("val-enrich-weather");
+  const valEnrichTime = document.getElementById("val-enrich-time");
+  const valEnrichProximity = document.getElementById("val-enrich-proximity");
+
+  // Cockpit Elements
+  const cockpitStatusChip = document.getElementById("cockpit-status-chip");
+  const cockpitEmptyState = document.getElementById("cockpit-empty-state");
+  const cockpitActiveSession = document.getElementById("cockpit-active-session");
+  const cockpitTrkId = document.getElementById("cockpit-trk-id");
+  const cockpitCountdown = document.getElementById("cockpit-countdown");
+  const timeoutTimerWidget = document.getElementById("timeout-timer-widget");
+  const cockpitRiderAvatar = document.getElementById("cockpit-rider-avatar");
+  const cockpitRiderName = document.getElementById("cockpit-rider-name");
+  const cockpitRiderEmail = document.getElementById("cockpit-rider-email");
+  const cockpitRiderPerf = document.getElementById("cockpit-rider-perf");
+  const cockpitDistHotel = document.getElementById("cockpit-dist-hotel");
+  const cockpitDeliveryDist = document.getElementById("cockpit-delivery-dist");
+  const cockpitPredictedEta = document.getElementById("cockpit-predicted-eta");
+  const cockpitAttemptCount = document.getElementById("cockpit-attempt-count");
+  const cockpitEmailRecipient = document.getElementById("cockpit-email-recipient");
+
+  // Simulation Controls
+  const btnPreviewEmailModal = document.getElementById("btn-preview-email-modal");
+  const btnSimActivate = document.getElementById("btn-sim-activate");
+  const btnSimDeactivate = document.getElementById("btn-sim-deactivate");
+  const btnSimTimeout = document.getElementById("btn-sim-timeout");
+
+  // Delivery Completion
+  const deliveryCompletionBox = document.getElementById("delivery-completion-box");
+  const inputActualDuration = document.getElementById("input-actual-duration");
+  const btnMarkDelivered = document.getElementById("btn-mark-delivered");
+  const deliveryResultBanner = document.getElementById("delivery-result-banner");
+
+  // Email Modal
+  const emailPreviewModal = document.getElementById("email-preview-modal");
+  const btnCloseEmailModal = document.getElementById("btn-close-email-modal");
+  const emailIframeWrapper = document.getElementById("email-iframe-wrapper");
+
+  // Sub-tabs & Tables
+  const subtabActiveOrders = document.getElementById("subtab-active-orders");
+  const subtabRawMl = document.getElementById("subtab-raw-ml");
+  const viewActiveOrders = document.getElementById("view-active-orders");
+  const viewRawMl = document.getElementById("view-raw-ml");
+  const dispatchesTableBody = document.getElementById("dispatches-table-body");
+  const rawMlTableBody = document.getElementById("raw-ml-table-body");
+  const dispatchCountBadge = document.getElementById("dispatch-count-badge");
+  const bnavDispatchBadge = document.getElementById("bnav-dispatch-badge");
+  const dispatchTableCount = document.getElementById("dispatch-table-count");
+  const rawMlTableCount = document.getElementById("raw-ml-table-count");
+  const btnRefreshDispatches = document.getElementById("btn-refresh-dispatches");
+  const btnToggleRawMl = document.getElementById("btn-toggle-raw-ml");
+  const btnExportRawMl = document.getElementById("btn-export-raw-ml");
+  const btnGotoDispatch = document.getElementById("btn-goto-dispatch");
+
+  let activeDispatchSession = null;
+  let countdownTimer = null;
+  let cachedEmailHtml = "";
+
+  // 1. Fetch Fresh Unique Tracking ID
+  async function fetchNewTrackingId() {
+    try {
+      const res = await fetch(`${API_BASE}/api/dispatch/generate-tracking-id`);
+      if (res.ok) {
+        const data = await res.json();
+        if (dispatchTrackingIdInput) {
+          dispatchTrackingIdInput.value = data.tracking_id;
+        }
+      }
+    } catch (_) {
+      const fallback = `TRK-${Math.floor(100000 + Math.random() * 900000)}`;
+      if (dispatchTrackingIdInput) dispatchTrackingIdInput.value = fallback;
+    }
+  }
+
+  if (btnGenTrackingId) {
+    btnGenTrackingId.addEventListener("click", () => {
+      fetchNewTrackingId();
+    });
+  }
+
+  if (btnCopyTracking) {
+    btnCopyTracking.addEventListener("click", () => {
+      if (dispatchTrackingIdInput && dispatchTrackingIdInput.value) {
+        navigator.clipboard.writeText(dispatchTrackingIdInput.value).then(() => {
+          btnCopyTracking.textContent = "✓";
+          setTimeout(() => { btnCopyTracking.textContent = "📋"; }, 1500);
+        }).catch(() => {});
+      }
+    });
+  }
+
+  // 2. Automated Backend Data Enrichment Preview
+  async function updateEnrichmentPreview() {
+    // A. Time of Day
+    const hour = new Date().getHours();
+    let tod = "Afternoon (12-17h)";
+    if (hour >= 6 && hour < 12) tod = "Morning (6-12h)";
+    else if (hour >= 17 && hour < 22) tod = "Evening (17-22h)";
+    else if (hour >= 22 || hour < 6) tod = "Night (22-6h)";
+    if (valEnrichTime) valEnrichTime.textContent = tod;
+
+    // B. Live Weather API via Open-Meteo
+    try {
+      const lat = hotelState.lat || 40.7306;
+      const lng = hotelState.lng || -73.9866;
+      const res = await fetch(`${API_BASE}/api/weather/live?lat=${lat}&lng=${lng}`);
+      if (res.ok) {
+        const w = await res.json();
+        if (valEnrichWeather) {
+          valEnrichWeather.textContent = `${w.weather} (${w.temperature_c}°C)`;
+        }
+      }
+    } catch (_) {
+      if (valEnrichWeather) valEnrichWeather.textContent = "Clear (API Connected)";
+    }
+
+    // C. Courier Proximity & Availability
+    try {
+      const activeHotelId = localStorage.getItem("dtml_active_hotel_id");
+      const url = activeHotelId ? `${API_BASE}/api/riders?hotel_id=${encodeURIComponent(activeHotelId)}` : `${API_BASE}/api/riders`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const riders = await res.json();
+        const availableCount = (riders || []).filter(r => r.status === "Available").length;
+        if (valEnrichProximity) {
+          valEnrichProximity.textContent = `${availableCount} Available Couriers`;
+        }
+      }
+    } catch (_) {}
+
+    // D. Computed Distance
+    if (valEnrichDistance) {
+      const d = (distanceInput && distanceInput.value) ? parseFloat(distanceInput.value) : 2.5;
+      valEnrichDistance.textContent = `~${d.toFixed(1)} km`;
+    }
+  }
+
+  // Use Map Dropoff Shortcut Button
+  if (btnUseMapAddress) {
+    btnUseMapAddress.addEventListener("click", () => {
+      if (destinationAddressInput && destinationAddressInput.value) {
+        dispatchClientAddressInput.value = destinationAddressInput.value;
+      } else {
+        dispatchClientAddressInput.value = currentDestinationLabel || "350 5th Ave, Floor 14, New York, NY";
+      }
+      if (distanceInput && distanceInput.value && valEnrichDistance) {
+        valEnrichDistance.textContent = `~${parseFloat(distanceInput.value).toFixed(1)} km`;
+      }
+    });
+  }
+
+  // Jump from Single Prediction to Dispatch
+  if (btnGotoDispatch) {
+    btnGotoDispatch.addEventListener("click", () => {
+      const dispatchTabBtn = document.querySelector(`.tab-btn[data-tab="dispatch-tab"]`);
+      if (dispatchTabBtn) dispatchTabBtn.click();
+      if (destinationAddressInput && destinationAddressInput.value) {
+        dispatchClientAddressInput.value = destinationAddressInput.value;
+      }
+      if (prepTimeInput && dispatchPrepTimeInput) {
+        dispatchPrepTimeInput.value = prepTimeInput.value;
+      }
+    });
+  }
+
+  // 3. 5-Minute Response Window Countdown Timer
+  function startCountdownTimer(expiresAtIso) {
+    if (countdownTimer) clearInterval(countdownTimer);
+    if (!expiresAtIso) return;
+
+    function tick() {
+      const targetTime = new Date(expiresAtIso).getTime();
+      const now = Date.now();
+      const diffMs = targetTime - now;
+
+      if (diffMs <= 0) {
+        clearInterval(countdownTimer);
+        countdownTimer = null;
+        if (cockpitCountdown) {
+          cockpitCountdown.textContent = "00:00 (EXPIRED)";
+          cockpitCountdown.style.color = "#dc2626";
+        }
+        if (cockpitStatusChip) {
+          cockpitStatusChip.textContent = "Timeout: Auto-Cascading...";
+          cockpitStatusChip.className = "dispatch-status-chip chip-timeout";
+        }
+        handleTimeoutCascade();
+        return;
+      }
+
+      const totalSec = Math.floor(diffMs / 1000);
+      const minutes = Math.floor(totalSec / 60);
+      const seconds = totalSec % 60;
+      const formatted = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+      if (cockpitCountdown) {
+        cockpitCountdown.textContent = formatted;
+        if (totalSec < 60) {
+          cockpitCountdown.style.color = "#ef4444";
+        } else {
+          cockpitCountdown.style.color = "";
+        }
+      }
+    }
+
+    tick();
+    countdownTimer = setInterval(tick, 1000);
+  }
+
+  function stopCountdownTimer() {
+    if (countdownTimer) {
+      clearInterval(countdownTimer);
+      countdownTimer = null;
+    }
+  }
+
+  // 4. Render Active Cockpit Session
+  function renderCockpitSession(data) {
+    if (!data) return;
+    activeDispatchSession = data;
+
+    if (cockpitEmptyState) cockpitEmptyState.classList.add("hidden");
+    if (cockpitActiveSession) cockpitActiveSession.classList.remove("hidden");
+
+    const trkId = data.tracking_id || (data.order && data.order.tracking_id) || "TRK-000000";
+    if (cockpitTrkId) cockpitTrkId.textContent = trkId;
+
+    const rider = data.assigned_rider || (data.order && data.order.assigned_rider) || {};
+    if (cockpitRiderName) cockpitRiderName.textContent = rider.rider_name || (data.order && data.order.rider_name) || "Courier Assigned";
+    if (cockpitRiderEmail) cockpitRiderEmail.textContent = rider.email || (data.order && data.order.rider_email) || "courier@hub.com";
+    if (cockpitRiderAvatar) {
+      const v = rider.vehicle_type || (data.order && data.order.vehicle_type) || "Scooter";
+      cockpitRiderAvatar.textContent = v === "Car" ? "🚗" : (v === "Bike" ? "🚲" : "🛵");
+    }
+
+    const perfScore = rider.performance_score !== undefined ? rider.performance_score : 100;
+    const rating = rider.rating || 4.8;
+    if (cockpitRiderPerf) {
+      cockpitRiderPerf.textContent = `⭐ ${rating.toFixed(1)} • ${Math.round(perfScore)}% On-Time`;
+    }
+
+    const distHotel = rider.distance_to_hotel_km !== undefined ? rider.distance_to_hotel_km : 0.2;
+    const deliveryDist = data.distance_km || (data.order && data.order.distance_km) || 2.5;
+    const etaMin = data.predicted_eta_min || data.predicted_eta_minutes || (data.order && (data.order.predicted_eta_min || data.order.predicted_eta_minutes)) || 25;
+    const attempt = data.attempt_count || (data.order && data.order.dispatch_attempts) || 1;
+
+    if (cockpitDistHotel) cockpitDistHotel.textContent = `${distHotel.toFixed(1)} km`;
+    if (cockpitDeliveryDist) cockpitDeliveryDist.textContent = `${deliveryDist.toFixed(1)} km`;
+    if (cockpitPredictedEta) cockpitPredictedEta.textContent = `~${etaMin} min`;
+    if (cockpitAttemptCount) cockpitAttemptCount.textContent = `${attempt}`;
+    if (cockpitEmailRecipient) {
+      const rName = rider.rider_name || (data.order && data.order.rider_name) || 'Courier';
+      const rMail = rider.email || (data.order && data.order.rider_email) || 'courier@hub.com';
+      cockpitEmailRecipient.textContent = `${rName} (${rMail})`;
+    }
+
+    cachedEmailHtml = (data.email_dispatch && data.email_dispatch.html_preview) || data.email_template_html || data.html_preview || "";
+
+    const st = data.dispatch_status || data.status || (data.order && data.order.dispatch_status) || "Pending_Rider";
+    const expiresAt = data.token_expires_at || (data.order && data.order.token_expires_at);
+    updateCockpitState(st, expiresAt);
+
+    if (inputActualDuration && etaMin) {
+      inputActualDuration.value = Math.max(5, Math.round(etaMin - 2));
+    }
+
+    if (deliveryResultBanner) deliveryResultBanner.classList.add("hidden");
+  }
+
+  function updateCockpitState(status, tokenExpiresAt) {
+    if (!cockpitStatusChip) return;
+
+    const s = String(status || "").toLowerCase();
+    const isPending = s.includes("pending") || s.includes("await");
+    const isAccepted = s === "accepted" || s === "active" || s.includes("delivery");
+    const isDelivered = s === "completed" || s === "delivered";
+
+    if (isPending) {
+      cockpitStatusChip.textContent = "Awaiting Courier Response";
+      cockpitStatusChip.className = "dispatch-status-chip chip-pending";
+      if (timeoutTimerWidget) timeoutTimerWidget.classList.remove("hidden");
+      if (tokenExpiresAt) startCountdownTimer(tokenExpiresAt);
+      if (btnSimActivate) btnSimActivate.disabled = false;
+      if (btnSimDeactivate) btnSimDeactivate.disabled = false;
+      if (btnSimTimeout) btnSimTimeout.disabled = false;
+      if (btnMarkDelivered) btnMarkDelivered.disabled = true;
+    } else if (isAccepted) {
+      stopCountdownTimer();
+      cockpitStatusChip.textContent = "Active: Courier On Delivery";
+      cockpitStatusChip.className = "dispatch-status-chip chip-accepted";
+      if (cockpitCountdown) {
+        cockpitCountdown.textContent = "ACCEPTED";
+        cockpitCountdown.style.color = "#059669";
+      }
+      if (btnSimActivate) btnSimActivate.disabled = true;
+      if (btnSimDeactivate) btnSimDeactivate.disabled = true;
+      if (btnSimTimeout) btnSimTimeout.disabled = true;
+      if (btnMarkDelivered) btnMarkDelivered.disabled = false;
+    } else if (isDelivered) {
+      stopCountdownTimer();
+      cockpitStatusChip.textContent = "Delivered & Scored";
+      cockpitStatusChip.className = "dispatch-status-chip chip-completed";
+      if (cockpitCountdown) {
+        cockpitCountdown.textContent = "DELIVERED";
+        cockpitCountdown.style.color = "#10b981";
+      }
+      if (btnSimActivate) btnSimActivate.disabled = true;
+      if (btnSimDeactivate) btnSimDeactivate.disabled = true;
+      if (btnSimTimeout) btnSimTimeout.disabled = true;
+      if (btnMarkDelivered) btnMarkDelivered.disabled = true;
+    }
+  }
+
+  // 5. Admin Form Submission (Instant Availability & Proximity Check)
+  if (dispatchAdminForm) {
+    dispatchAdminForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const trackingId = dispatchTrackingIdInput ? dispatchTrackingIdInput.value.trim() : "";
+      const clientName = dispatchClientNameInput ? dispatchClientNameInput.value.trim() : "";
+      const clientPhone = dispatchClientPhoneInput ? dispatchClientPhoneInput.value.trim() : "";
+      const clientAddress = dispatchClientAddressInput ? dispatchClientAddressInput.value.trim() : "";
+      const prepTime = dispatchPrepTimeInput ? parseFloat(dispatchPrepTimeInput.value) || 15 : 15;
+      const traffic = dispatchTrafficLevelInput ? dispatchTrafficLevelInput.value : "Medium";
+
+      if (!clientName || !clientPhone || !clientAddress) {
+        alert("Please provide the Client Name, Contact Number, and Delivery Address.");
+        return;
+      }
+
+      const activeHotelId = localStorage.getItem("dtml_active_hotel_id");
+      const payload = {
+        tracking_id: trackingId || undefined,
+        client_name: clientName,
+        client_phone: clientPhone,
+        client_address: clientAddress,
+        delivery_lat: currentDestLat || (hotelState.lat + 0.02),
+        delivery_lng: currentDestLng || (hotelState.lng + 0.02),
+        prep_time_minutes: prepTime,
+        traffic_level: traffic,
+      };
+
+      if (activeHotelId) {
+        payload.hotel_id = parseInt(activeHotelId, 10);
+      }
+
+      if (btnConfirmDispatch) btnConfirmDispatch.disabled = true;
+      if (dispatchSpinner) dispatchSpinner.classList.remove("hidden");
+
+      try {
+        const headers = { "Content-Type": "application/json" };
+        if (activeHotelId) headers["X-Hotel-ID"] = String(activeHotelId);
+
+        const res = await fetch(`${API_BASE}/api/dispatch/create`, {
+          method: "POST",
+          headers: headers,
+          body: JSON.stringify(payload),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          renderCockpitSession(data);
+          await loadRecentDispatches();
+          await loadFleetStats();
+          await loadRidersList();
+          if (cockpitActiveSession) {
+            cockpitActiveSession.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          }
+        } else {
+          const err = await res.json();
+          alert(`Dispatch creation failed: ${err.detail || "No available rider or validation error"}`);
+        }
+      } catch (err) {
+        alert(`Network error creating dispatch: ${err.message}`);
+      } finally {
+        if (btnConfirmDispatch) btnConfirmDispatch.disabled = false;
+        if (dispatchSpinner) dispatchSpinner.classList.add("hidden");
+      }
+    });
+  }
+
+  // 6. Action Simulations (Activate, Deactivate, Timeout, Delivered)
+  if (btnSimActivate) {
+    btnSimActivate.addEventListener("click", async () => {
+      const token = activeDispatchSession ? (activeDispatchSession.dispatch_token || activeDispatchSession.token || activeDispatchSession.response_token || (activeDispatchSession.order && activeDispatchSession.order.dispatch_token)) : null;
+      if (!token) {
+        alert("No active dispatch session available to activate.");
+        return;
+      }
+      btnSimActivate.disabled = true;
+      try {
+        const res = await fetch(`${API_BASE}/api/dispatch/respond?token=${encodeURIComponent(token)}&action=activate&format=json`);
+        if (res.ok) {
+          if (activeDispatchSession) {
+            activeDispatchSession.dispatch_status = "Active";
+            activeDispatchSession.status = "accepted";
+          }
+          updateCockpitState("accepted");
+          await loadRidersList();
+          await loadFleetStats();
+          await loadRecentDispatches();
+          showToastBanner("✅ Order Activated! Courier is now On Delivery.");
+        } else {
+          const err = await res.json();
+          alert(`Could not activate: ${err.detail || err.error || "Activation failed"}`);
+        }
+      } catch (e) {
+        alert(`Error activating order: ${e.message}`);
+      } finally {
+        btnSimActivate.disabled = false;
+      }
+    });
+  }
+
+  if (btnSimDeactivate) {
+    btnSimDeactivate.addEventListener("click", async () => {
+      const token = activeDispatchSession ? (activeDispatchSession.dispatch_token || activeDispatchSession.token || activeDispatchSession.response_token || (activeDispatchSession.order && activeDispatchSession.order.dispatch_token)) : null;
+      if (!token) {
+        alert("No active dispatch session to deactivate.");
+        return;
+      }
+      btnSimDeactivate.disabled = true;
+      try {
+        const res = await fetch(`${API_BASE}/api/dispatch/respond?token=${encodeURIComponent(token)}&action=deactivate&format=json`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.cascaded && (data.order || data.next_rider)) {
+            const nextOrder = data.order || activeDispatchSession;
+            if (data.next_rider) nextOrder.assigned_rider = data.next_rider;
+            if (data.email_dispatch) nextOrder.email_dispatch = data.email_dispatch;
+            renderCockpitSession(nextOrder);
+            showToastBanner(`🔄 Order Deactivated. Automatically cascaded to ${nextOrder.assigned_rider ? nextOrder.assigned_rider.rider_name : 'next courier'}!`);
+          } else {
+            showToastBanner(data.message || data.reason || "Order Deactivated.");
+          }
+          await loadRidersList();
+          await loadFleetStats();
+          await loadRecentDispatches();
+        } else {
+          const err = await res.json();
+          alert(`Could not deactivate: ${err.detail || err.error || "Deactivate failed"}`);
+        }
+      } catch (e) {
+        alert(`Error deactivating order: ${e.message}`);
+      } finally {
+        btnSimDeactivate.disabled = false;
+      }
+    });
+  }
+
+  async function handleTimeoutCascade() {
+    const trkId = activeDispatchSession ? (activeDispatchSession.tracking_id || (activeDispatchSession.order && activeDispatchSession.order.tracking_id)) : null;
+    if (!trkId) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/dispatch/simulate-timeout/${encodeURIComponent(trkId)}`, {
+        method: "POST"
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.cascaded && (data.order || data.next_rider)) {
+          const nextOrder = data.order || activeDispatchSession;
+          if (data.next_rider) nextOrder.assigned_rider = data.next_rider;
+          if (data.email_dispatch) nextOrder.email_dispatch = data.email_dispatch;
+          renderCockpitSession(nextOrder);
+          showToastBanner(`⏱️ 5-Minute Timeout: Cascaded to ${data.next_rider ? data.next_rider.rider_name : 'next courier'}!`);
+        } else {
+          showToastBanner("⏱️ 5-Minute Timeout: All couriers notified or expired.");
+        }
+        await loadRidersList();
+        await loadFleetStats();
+        await loadRecentDispatches();
+      }
+    } catch (e) {
+      console.warn("Timeout cascade error:", e);
+    }
+  }
+
+  if (btnSimTimeout) {
+    btnSimTimeout.addEventListener("click", () => {
+      if (!activeDispatchSession) return;
+      handleTimeoutCascade();
+    });
+  }
+
+  // 7. Delivery Completion & Performance Recording (ML Feedback)
+  if (btnMarkDelivered) {
+    btnMarkDelivered.addEventListener("click", async () => {
+      const trkId = activeDispatchSession ? (activeDispatchSession.tracking_id || (activeDispatchSession.order && activeDispatchSession.order.tracking_id)) : null;
+      if (!trkId) {
+        alert("No active dispatch session to complete.");
+        return;
+      }
+      const actualMins = parseFloat(inputActualDuration ? inputActualDuration.value : "20") || 20;
+      btnMarkDelivered.disabled = true;
+
+      try {
+        const res = await fetch(`${API_BASE}/api/dispatch/complete/${encodeURIComponent(trkId)}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ actual_duration_min: actualMins, actual_delivery_minutes: actualMins }),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          updateCockpitState("completed");
+
+          if (deliveryResultBanner) {
+            deliveryResultBanner.classList.remove("hidden");
+            const isOnTime = data.was_on_time !== undefined ? data.was_on_time : data.on_time;
+            const riderPerf = data.rider_performance || {};
+            const score = riderPerf.performance_score !== undefined ? riderPerf.performance_score : (data.rider_performance_score || 100);
+            const rating = riderPerf.rating || data.rider_rating || 4.9;
+            const riderName = (data.order && data.order.assigned_rider) ? data.order.assigned_rider.rider_name : ((data.order && data.order.rider_name) ? data.order.rider_name : "Courier");
+            const etaMin = (data.order && (data.order.predicted_eta_min || data.order.predicted_eta_minutes)) || data.predicted_eta_min || 25;
+
+            if (isOnTime) {
+              deliveryResultBanner.className = "delivery-result-banner banner-success";
+              deliveryResultBanner.innerHTML = `
+                <strong>🏆 On-Time Delivery Recorded!</strong>
+                <p>Courier <strong>${riderName}</strong> delivered in <strong>${actualMins} min</strong> (within ML ETA of ~${etaMin} min).</p>
+                <p class="banner-sub">⭐ High Performance Awarded: Rating upgraded to <strong>${rating} ★</strong>, Performance Score <strong>${score}%</strong>. Assignment priority boosted!</p>
+                <p class="banner-sub">📊 Raw operational features logged directly to Machine Learning retraining dataset.</p>
+              `;
+            } else {
+              deliveryResultBanner.className = "delivery-result-banner banner-warning";
+              deliveryResultBanner.innerHTML = `
+                <strong>⏱️ Delivery Completed (Delayed)</strong>
+                <p>Courier <strong>${riderName}</strong> took <strong>${actualMins} min</strong> (ML ETA was ~${etaMin} min).</p>
+                <p class="banner-sub">Courier metrics updated: Rating <strong>${rating} ★</strong>, Score <strong>${score}%</strong>.</p>
+                <p class="banner-sub">📊 Raw operational features logged directly to Machine Learning retraining dataset.</p>
+              `;
+            }
+          }
+
+          await loadRidersList();
+          await loadFleetStats();
+          await loadRecentDispatches();
+          await loadRawMlData();
+        } else {
+          const err = await res.json();
+          alert(`Could not complete delivery: ${err.detail || err.error || "Completion failed"}`);
+        }
+      } catch (e) {
+        alert(`Error recording delivery: ${e.message}`);
+      } finally {
+        btnMarkDelivered.disabled = false;
+      }
+    });
+  }
+
+  function showToastBanner(msg) {
+    if (deliveryResultBanner) {
+      deliveryResultBanner.classList.remove("hidden");
+      deliveryResultBanner.className = "delivery-result-banner banner-info";
+      deliveryResultBanner.innerHTML = `<span>${msg}</span>`;
+      setTimeout(() => {
+        if (deliveryResultBanner && deliveryResultBanner.classList.contains("banner-info")) {
+          deliveryResultBanner.classList.add("hidden");
+        }
+      }, 5000);
+    }
+  }
+
+  // 8. Email Template Preview Modal
+  if (btnPreviewEmailModal) {
+    btnPreviewEmailModal.addEventListener("click", () => {
+      if (!cachedEmailHtml) {
+        alert("No email template has been generated yet for this session.");
+        return;
+      }
+      if (emailIframeWrapper) {
+        emailIframeWrapper.innerHTML = cachedEmailHtml;
+
+        // Intercept action clicks inside the email preview
+        const links = emailIframeWrapper.querySelectorAll("a");
+        links.forEach(a => {
+          const href = a.getAttribute("href") || "";
+          if (href.includes("action=activate")) {
+            a.addEventListener("click", (evt) => {
+              evt.preventDefault();
+              closeEmailModal();
+              if (btnSimActivate) btnSimActivate.click();
+            });
+          } else if (href.includes("action=deactivate")) {
+            a.addEventListener("click", (evt) => {
+              evt.preventDefault();
+              closeEmailModal();
+              if (btnSimDeactivate) btnSimDeactivate.click();
+            });
+          }
+        });
+      }
+      if (emailPreviewModal) emailPreviewModal.classList.remove("hidden");
+    });
+  }
+
+  function closeEmailModal() {
+    if (emailPreviewModal) emailPreviewModal.classList.add("hidden");
+  }
+
+  if (btnCloseEmailModal) btnCloseEmailModal.addEventListener("click", closeEmailModal);
+
+  // Close email modal on backdrop click
+  if (emailPreviewModal) {
+    emailPreviewModal.addEventListener("click", (e) => {
+      if (e.target === emailPreviewModal) closeEmailModal();
+    });
+  }
+
+  // 9. Tables: Recent Dispatches & Raw ML Retraining Dataset
+  if (subtabActiveOrders && subtabRawMl) {
+    subtabActiveOrders.addEventListener("click", () => {
+      subtabActiveOrders.classList.add("active");
+      subtabRawMl.classList.remove("active");
+      if (viewActiveOrders) viewActiveOrders.classList.remove("hidden");
+      if (viewRawMl) viewRawMl.classList.add("hidden");
+    });
+
+    subtabRawMl.addEventListener("click", () => {
+      subtabRawMl.classList.add("active");
+      subtabActiveOrders.classList.remove("active");
+      if (viewRawMl) viewRawMl.classList.remove("hidden");
+      if (viewActiveOrders) viewActiveOrders.classList.add("hidden");
+      loadRawMlData();
+    });
+  }
+
+  if (btnToggleRawMl) {
+    btnToggleRawMl.addEventListener("click", () => {
+      if (subtabRawMl) subtabRawMl.click();
+      if (viewRawMl) viewRawMl.scrollIntoView({ behavior: "smooth" });
+    });
+  }
+
+  if (btnRefreshDispatches) {
+    btnRefreshDispatches.addEventListener("click", async () => {
+      btnRefreshDispatches.textContent = "⏳ Refreshing...";
+      await loadRecentDispatches();
+      await loadRawMlData();
+      await updateEnrichmentPreview();
+      btnRefreshDispatches.textContent = "🔄 Refresh Pipeline";
+    });
+  }
+
+  async function loadRecentDispatches() {
+    try {
+      const activeHotelId = localStorage.getItem("dtml_active_hotel_id");
+      const url = activeHotelId ? `${API_BASE}/api/dispatch/active?hotel_id=${encodeURIComponent(activeHotelId)}` : `${API_BASE}/api/dispatch/active`;
+      const res = await fetch(url);
+      if (!res.ok) return;
+
+      const data = await res.json();
+      const orders = data.orders || data.active_orders || [];
+
+      if (dispatchCountBadge) dispatchCountBadge.textContent = orders.length;
+      if (bnavDispatchBadge) bnavDispatchBadge.textContent = orders.length;
+      if (dispatchTableCount) dispatchTableCount.textContent = orders.length;
+
+      if (!dispatchesTableBody) return;
+
+      if (orders.length === 0) {
+        dispatchesTableBody.innerHTML = `<tr><td colspan="10" class="empty-cell">No dispatch records found. Create an order above to launch pipeline.</td></tr>`;
+        return;
+      }
+
+      dispatchesTableBody.innerHTML = "";
+      orders.forEach((o) => {
+        const tr = document.createElement("tr");
+
+        const st = String(o.dispatch_status || o.status || "").toLowerCase();
+        let statusClass = "chip-pending";
+        let statusLabel = "Awaiting Response";
+        if (st === "accepted" || st === "active" || st.includes("delivery")) {
+          statusClass = "chip-accepted";
+          statusLabel = "On Delivery";
+        } else if (st === "completed" || st === "delivered") {
+          statusClass = "chip-completed";
+          statusLabel = "Delivered";
+        } else if (st === "cascaded" || st.includes("timeout")) {
+          statusClass = "chip-timeout";
+          statusLabel = "Cascaded";
+        }
+
+        const riderName = (o.assigned_rider && o.assigned_rider.rider_name) ? o.assigned_rider.rider_name : (o.rider_name || "Pending");
+        const riderDist = o.assigned_rider ? `${(o.assigned_rider.distance_to_hotel_km || 0).toFixed(1)} km` : (o.rider_dist_km ? `${o.rider_dist_km.toFixed(1)} km` : "--");
+        const eta = o.predicted_eta_min || o.predicted_eta_minutes || "--";
+        const attempts = o.dispatch_attempts || o.attempt_count || 1;
+
+        tr.innerHTML = `
+          <td><strong style="font-family:'JetBrains Mono',monospace; color:var(--primary);">${o.tracking_id}</strong></td>
+          <td>${o.client_name || '--'}</td>
+          <td><a href="tel:${o.client_phone || ''}" style="color:var(--text-main); font-weight:600;">${o.client_phone || '--'}</a></td>
+          <td><strong>${riderName}</strong> <span style="font-size:0.75rem; color:var(--text-muted);">(${riderDist})</span></td>
+          <td>${(o.distance_km || 0).toFixed(1)} km</td>
+          <td><span class="weather-pill">${o.weather || 'Clear'}</span></td>
+          <td><strong style="color:var(--primary);">~${eta} min</strong></td>
+          <td><span class="attempt-badge">#${attempts}</span></td>
+          <td><span class="dispatch-status-chip ${statusClass}" style="padding:0.2rem 0.5rem; font-size:0.75rem;">${statusLabel}</span></td>
+          <td>
+            <button type="button" class="btn btn-secondary btn-sm btn-inspect-dispatch" data-tracking="${o.tracking_id}" style="padding:0.2rem 0.6rem; font-size:0.75rem;">
+              Inspect
+            </button>
+          </td>
+        `;
+
+        const inspectBtn = tr.querySelector(".btn-inspect-dispatch");
+        if (inspectBtn) {
+          inspectBtn.addEventListener("click", () => {
+            renderCockpitSession(o);
+            if (cockpitActiveSession) cockpitActiveSession.scrollIntoView({ behavior: "smooth" });
+          });
+        }
+
+        dispatchesTableBody.appendChild(tr);
+      });
+    } catch (e) {
+      console.warn("Could not load recent dispatches:", e);
+    }
+  }
+
+  async function loadRawMlData() {
+    try {
+      const activeHotelId = localStorage.getItem("dtml_active_hotel_id");
+      const url = activeHotelId ? `${API_BASE}/api/dispatch/raw-ml-data?hotel_id=${encodeURIComponent(activeHotelId)}` : `${API_BASE}/api/dispatch/raw-ml-data`;
+      const res = await fetch(url);
+      if (!res.ok) return;
+
+      const data = await res.json();
+      const records = data.records || data.raw_records || [];
+
+      if (rawMlTableCount) rawMlTableCount.textContent = records.length;
+      if (!rawMlTableBody) return;
+
+      if (records.length === 0) {
+        rawMlTableBody.innerHTML = `<tr><td colspan="12" class="empty-cell">No raw ML records logged yet. Complete a delivery to generate retraining records.</td></tr>`;
+        return;
+      }
+
+      rawMlTableBody.innerHTML = "";
+      records.forEach((r) => {
+        const tr = document.createElement("tr");
+        const isOnTime = r.was_on_time !== undefined ? r.was_on_time : r.on_time;
+        const onTimeTag = (isOnTime === 1 || isOnTime === true)
+          ? `<span style="color:#059669; font-weight:700;">✅ Yes</span>`
+          : (isOnTime === 0 || isOnTime === false ? `<span style="color:#dc2626; font-weight:700;">⏱️ No</span>` : `<span style="color:#64748b;">Pending</span>`);
+        
+        const loggedDate = (r.completed_at || r.timestamp || r.created_at) ? new Date(r.completed_at || r.timestamp || r.created_at).toLocaleTimeString() : "--";
+        const actualMin = r.actual_duration_min !== null && r.actual_duration_min !== undefined
+          ? `${r.actual_duration_min}m`
+          : (r.actual_delivery_minutes !== null && r.actual_delivery_minutes !== undefined ? `${r.actual_delivery_minutes}m` : '--');
+        const predEta = r.predicted_eta_min || r.predicted_eta_minutes || '--';
+        const prepMin = r.prep_time_min || r.preparation_time_min || 15;
+        const expYrs = r.courier_exp_yrs || r.courier_experience_yrs || 2.5;
+
+        tr.innerHTML = `
+          <td><strong style="font-family:'JetBrains Mono',monospace;">${r.tracking_id || '--'}</strong></td>
+          <td>${(r.distance_km || 0).toFixed(1)}</td>
+          <td>${r.weather || 'Clear'}</td>
+          <td>${r.traffic_level || 'Medium'}</td>
+          <td>${r.time_of_day || 'Afternoon'}</td>
+          <td>${r.vehicle_type || 'Scooter'}</td>
+          <td>${prepMin}</td>
+          <td>${expYrs}</td>
+          <td><strong>~${predEta}m</strong></td>
+          <td><strong>${actualMin}</strong></td>
+          <td>${onTimeTag}</td>
+          <td style="font-size:0.75rem; color:var(--text-muted);">${loggedDate}</td>
+        `;
+        rawMlTableBody.appendChild(tr);
+      });
+    } catch (e) {
+      console.warn("Could not load raw ML data:", e);
+    }
+  }
+
+  // 10. Export Raw ML Dataset as JSON
+  if (btnExportRawMl) {
+    btnExportRawMl.addEventListener("click", async () => {
+      try {
+        const activeHotelId = localStorage.getItem("dtml_active_hotel_id");
+        const url = activeHotelId ? `${API_BASE}/api/dispatch/raw-ml-data?hotel_id=${encodeURIComponent(activeHotelId)}` : `${API_BASE}/api/dispatch/raw-ml-data`;
+        const res = await fetch(url);
+        if (res.ok) {
+          const data = await res.json();
+          const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = `delivery_ml_raw_dataset_${Date.now()}.json`;
+          a.click();
+        }
+      } catch (e) {
+        alert(`Export failed: ${e.message}`);
+      }
+    });
+  }
+
+  // Initialize hotel profile, riders fleet, dispatches, and history badge on page load
   loadHotelProfile();
   loadOrderHistory(true);
   loadRidersList();
   loadFleetStats();
+  fetchNewTrackingId();
+  loadRecentDispatches();
 });
+
 
